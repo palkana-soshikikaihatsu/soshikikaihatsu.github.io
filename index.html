@@ -47,8 +47,8 @@
         display: flex;
         justify-content: center;
         overflow: auto;
-        padding: 40px;
-        min-height: 80vh;
+        padding: 100px;
+        min-height: 150vh;
       }
     </style>
   </head>
@@ -143,7 +143,7 @@ flowchart TD
         },
       });
 
-      let currentZoom = 1.5;
+      let currentZoom = 3;
       const container = document.getElementById("mermaid-container");
       
       // 初期ズームを適用
@@ -164,7 +164,7 @@ flowchart TD
       }
 
       function resetZoom() {
-        currentZoom = 1.5;
+        currentZoom = 3;
         container.style.transform = `scale(${currentZoom})`;
       }
     </script>
