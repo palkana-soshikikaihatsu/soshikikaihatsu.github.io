@@ -3,170 +3,222 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>雇用区分変更フローチャート</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <title>パルシステム神奈川 組織開発課ポータル</title>
     <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
       body {
         font-family: "Segoe UI", "Yu Gothic", "Meiryo", sans-serif;
-        margin: 0;
-        padding: 20px;
-        background-color: #f5f5f5;
-      }
-      .container {
-        max-width: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
         margin: 0 auto;
-        background-color: white;
+      }
+
+      header {
+        background: rgba(255, 255, 255, 0.95);
         padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        text-align: center;
-        color: #333;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         margin-bottom: 30px;
-      }
-      .controls {
         text-align: center;
-        margin-bottom: 20px;
       }
-      button {
-        padding: 10px 20px;
-        margin: 5px;
-        font-size: 14px;
+
+      h1 {
+        color: #333;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        color: #666;
+        font-size: 1.1em;
+        margin-top: 10px;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-top: 30px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         cursor: pointer;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 4px;
+        text-decoration: none;
+        color: inherit;
+        display: block;
       }
-      button:hover {
-        background-color: #45a049;
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       }
-      #mermaid-container {
-        display: flex;
-        justify-content: center;
-        overflow: auto;
-        padding: 100px;
-        min-height: 150vh;
+
+      .card-icon {
+        font-size: 3em;
+        margin-bottom: 15px;
+      }
+
+      .card-title {
+        font-size: 1.5em;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .card-description {
+        color: #666;
+        line-height: 1.6;
+      }
+
+      .info-section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 30px;
+        margin-top: 25px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-section h2 {
+        color: #333;
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .info-section ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .info-section li {
+        padding: 12px 0;
+        color: #555;
+        line-height: 1.8;
+        border-bottom: 1px solid #eee;
+      }
+
+      .info-section li:last-child {
+        border-bottom: none;
+      }
+
+      .info-section li::before {
+        content: "✓ ";
+        color: #667eea;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 50px;
+        padding: 20px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 1.8em;
+        }
+
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>雇用区分変更フローチャート</h1>
-      <div class="controls">
-        <button onclick="zoomIn()">拡大 (+)</button>
-        <button onclick="zoomOut()">縮小 (-)</button>
-        <button onclick="resetZoom()">リセット</button>
-      </div>
-      <div id="mermaid-container" style="transform-origin: top center">
-        <div class="mermaid">
-flowchart TD
-    A[現在の雇用状況] --> B{パートナー職員}
-    A --> C{正規職員専任職}
-    A --> D{正規職員総合職}
-    
-    B --> E[正規職員専任職への雇用区分変更希望]
-    E --> F{受験要件確認}
-    F -->|要件満たす| G[雇用区分・形態変更申請書提出]
-    F -->|要件満たさない| H[受験不可]
-    G --> I[書類選考]
-    I -->|合格| J[適性検査・面接部門長面接or役員面接]
-    I -->|不合格| K[変更不可]
-    J -->|合格| L[専務理事承認]
-    J -->|不合格| K
-    L --> M[正規職員専任職へ変更・仮格付け→本格付け・基本給=基礎時給×平均労働時間・勤続年数通算]
-    
-    C --> N[正規職員総合職への雇用形態変更希望]
-    C --> O[パートナー職員への雇用区分変更希望]
-    
-    N --> P{受験要件確認・運転免許・能力アセスメント4.5以上・所属長推薦}
-    P -->|要件満たす| Q[雇用区分・形態変更申請書提出]
-    P -->|要件満たさない| R[受験不可]
-    Q --> S[適性検査・役員面接]
-    S -->|合格| T[専務理事承認]
-    S -->|不合格| U[変更不可]
-    T --> V[正規職員総合職へ変更・同ステージ格付け・基本給同額・勤続年数通算]
-    
-    O --> W[変更理由申出]
-    W --> X[部門長・人事部門長承認]
-    X -->|承認| Y[パートナー職員へ変更別途基準による]
-    X -->|不承認| Z[変更不可]
-    
-    D --> AA[正規職員専任職への雇用形態変更希望]
-    D --> BB[パートナー職員への雇用区分変更希望]
-    
-    AA --> CC[変更理由申出]
-    CC --> DD[部門長・専務理事承認]
-    DD -->|承認| EE[正規職員専任職へ変更・同ステージ格付け・ステージ5以上は上限まで・基本給同額]
-    DD -->|不承認| FF[変更不可]
-    
-    BB --> GG[変更理由・期間申出]
-    GG --> HH[部門長・人事部門長承認]
-    HH -->|承認| II[パートナー職員へ変更別途基準による]
-    HH -->|不承認| JJ[変更不可]
-    
-    Y --> KK[正規職員への再変更希望]
-    KK --> LL[変更理由・時期申出]
-    LL --> MM[部門長・人事部門長承認]
-    MM -->|承認| NN[正規職員へ復帰]
-    MM -->|不承認| OO[変更不可]
-    
-    EE --> PP[総合職への再変更希望]
-    PP -->|第2条に基づく| Q
-    
-    classDef startNode fill:#e1f5fe
-    classDef processNode fill:#f3e5f5
-    classDef decisionNode fill:#fff3e0
-    classDef endNode fill:#e8f5e8
-    classDef rejectNode fill:#ffebee
-    
-    class A startNode
-    class B,C,D startNode
-    class G,I,J,L,Q,S,T,W,X,CC,DD,GG,HH,LL,MM processNode
-    class F,P decisionNode
-    class M,V,Y,EE,II,NN endNode
-    class H,K,R,U,Z,FF,JJ,OO rejectNode
+      <header>
+        <h1>🏢 パルシステム神奈川</h1>
+        <h2>組織開発課ポータル</h2>
+        <p class="subtitle">Organization Development Portal</p>
+      </header>
+
+      <div class="content-grid">
+        <a href="雇用区分変更フローチャート.html" class="card">
+          <div class="card-icon">📊</div>
+          <h3 class="card-title">雇用区分変更フローチャート</h3>
+          <p class="card-description">
+            パートナー職員、正規職員（専任職・総合職）の雇用区分変更に関するフローチャートを確認できます。
+          </p>
+        </a>
+
+        <div class="card" style="cursor: default; opacity: 0.7;">
+          <div class="card-icon">📚</div>
+          <h3 class="card-title">人事制度資料</h3>
+          <p class="card-description">
+            人事制度に関する各種資料やマニュアルを掲載予定です。
+          </p>
+        </div>
+
+        <div class="card" style="cursor: default; opacity: 0.7;">
+          <div class="card-icon">📝</div>
+          <h3 class="card-title">申請書フォーム</h3>
+          <p class="card-description">
+            各種申請書のダウンロードや申請方法について掲載予定です。
+          </p>
+        </div>
+
+        <div class="card" style="cursor: default; opacity: 0.7;">
+          <div class="card-icon">💡</div>
+          <h3 class="card-title">FAQ・よくある質問</h3>
+          <p class="card-description">
+            組織開発や人事制度に関するよくある質問と回答を掲載予定です。
+          </p>
         </div>
       </div>
+
+      <div class="info-section">
+        <h2>📌 お知らせ</h2>
+        <ul>
+          <li>組織開発課ポータルサイトを開設しました</li>
+          <li>雇用区分変更フローチャートを公開しました</li>
+          <li>今後、順次コンテンツを追加していく予定です</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <h2>ℹ️ 組織開発課について</h2>
+        <ul>
+          <li>人事制度の企画・運用</li>
+          <li>組織活性化の支援</li>
+          <li>人材育成プログラムの推進</li>
+          <li>雇用区分変更の管理</li>
+        </ul>
+      </div>
+
+      <footer>
+        <p>&copy; 2026 パルシステム神奈川 組織開発課</p>
+        <p style="margin-top: 10px; font-size: 0.9em;">
+          最終更新: <span id="last-updated"></span>
+        </p>
+      </footer>
     </div>
 
     <script>
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: "default",
-        flowchart: {
-          useMaxWidth: true,
-          htmlLabels: true,
-          curve: "basis",
-        },
+      // 最終更新日を表示
+      document.getElementById("last-updated").textContent = new Date().toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
       });
-
-      let currentZoom = 3;
-      const container = document.getElementById("mermaid-container");
-      
-      // 初期ズームを適用
-      window.addEventListener('load', function() {
-        container.style.transform = `scale(${currentZoom})`;
-      });
-
-      function zoomIn() {
-        currentZoom += 0.1;
-        container.style.transform = `scale(${currentZoom})`;
-      }
-
-      function zoomOut() {
-        if (currentZoom > 0.3) {
-          currentZoom -= 0.1;
-          container.style.transform = `scale(${currentZoom})`;
-        }
-      }
-
-      function resetZoom() {
-        currentZoom = 3;
-        container.style.transform = `scale(${currentZoom})`;
-      }
     </script>
   </body>
 </html>
