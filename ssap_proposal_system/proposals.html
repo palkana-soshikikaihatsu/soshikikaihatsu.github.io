@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提案一覧 - SSAP提案システム</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="header-title">📊 提案一覧</h1>
+                <p class="header-subtitle">良いと思う提案にいいねしましょう</p>
+            </div>
+            <a href="index.html" class="btn btn-back">← ホームに戻る</a>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- フィルター・検索バー -->
+            <section class="filter-section">
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label for="categoryFilter">カテゴリ:</label>
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="all">すべて</option>
+                            <option value="業務効率化">業務効率化</option>
+                            <option value="職場環境">職場環境</option>
+                            <option value="福利厚生">福利厚生</option>
+                            <option value="コミュニケーション">コミュニケーション</option>
+                            <option value="DX・IT">DX・IT</option>
+                            <option value="コスト削減">コスト削減</option>
+                            <option value="安全対策">安全対策</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="statusFilter">ステータス:</label>
+                        <select id="statusFilter" class="filter-select">
+                            <option value="all">すべて</option>
+                            <option value="掲載中">掲載中</option>
+                            <option value="実施候補">実施候補</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="sortBy">並び順:</label>
+                        <select id="sortBy" class="filter-select">
+                            <option value="newest">新しい順</option>
+                            <option value="oldest">古い順</option>
+                            <option value="most-liked">いいね数順</option>
+                            <option value="expiring-soon">期限が近い順</option>
+                        </select>
+                    </div>
+
+                    <div class="search-group">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input" 
+                            placeholder="🔍 キーワード検索..."
+                        >
+                    </div>
+                </div>
+            </section>
+
+            <!-- 統計情報 -->
+            <section class="summary-bar">
+                <div class="summary-item">
+                    <span class="summary-label">表示中:</span>
+                    <span class="summary-value" id="displayCount">0</span>件
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">実施候補:</span>
+                    <span class="summary-value highlight" id="candidateCount">0</span>件
+                </div>
+            </section>
+
+            <!-- ローディング表示 -->
+            <div id="loadingSpinner" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>読み込み中...</p>
+            </div>
+
+            <!-- エラーメッセージ -->
+            <div id="errorMessage" class="error-container" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h3>データの取得に失敗しました</h3>
+                <p id="errorText"></p>
+                <button class="btn btn-primary" onclick="loadProposals()">再読み込み</button>
+            </div>
+
+            <!-- 提案リスト -->
+            <section id="proposalsList" class="proposals-list">
+                <!-- JavaScriptで動的に生成 -->
+            </section>
+
+            <!-- 空の状態 -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📭</div>
+                <h3>提案がありません</h3>
+                <p>最初の提案を投稿してみませんか？</p>
+                <a href="submit.html" class="btn btn-primary">
+                    <span class="btn-icon">✏️</span>
+                    提案を投稿する
+                </a>
+            </div>
+        </main>
+
+        <!-- フッター -->
+        <footer class="footer">
+            <p>&copy; 2026 SSAP提案システム | 組織開発課</p>
+        </footer>
+    </div>
+
+    <!-- モーダル: 提案詳細 -->
+    <div id="proposalModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div id="modalBody">
+                <!-- JavaScriptで動的に生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/proposals.js"></script>
+</body>
+</html>
