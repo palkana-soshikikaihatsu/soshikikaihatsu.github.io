@@ -21,6 +21,8 @@ GitHub PagesベースのSSAP（社内改善提案）システムです。全従�
 
 ## 🛠️ セットアップ手順
 
+> 💡 **クイックチェック**: セットアップが完了したら、[setup-check.html](setup-check.html) を開いて設定を確認できます。
+
 ### 1. Google Spreadsheetの準備
 
 1. 新しいGoogleスプレッドシートを作成
@@ -171,6 +173,8 @@ const PROPOSAL_DURATION_DAYS = 30; // 日数
      - reCAPTCHA導入
 
 ## 🐛 トラブルシューティング
+
+> 📖 **詳細なトラブルシューティングガイド**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) を参照してください。
 
 ### エラー: "GAS_WEB_APP_URLが設定されていません"
 

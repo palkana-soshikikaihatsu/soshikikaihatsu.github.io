@@ -10,7 +10,7 @@
  */
 
 // ========== 設定 ==========
-const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"; // スプレッドシートIDを設定
+const SPREADSHEET_ID = "1_JbzctKYfqSLwPJ-7aBajENreTJFCjk_Q-J4KQThDzY"; // スプレッドシートIDを設定
 const PROPOSAL_SHEET_NAME = "提案一覧";
 const TOTAL_EMPLOYEES = 600; // 全従業員数
 const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
@@ -22,6 +22,11 @@ const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
  */
 function doPost(e) {
   try {
+    // スプレッドシートIDチェック
+    if (SPREADSHEET_ID === "YOUR_SPREADSHEET_ID_HERE") {
+      return createResponse(false, "スプレッドシートIDが設定されていません");
+    }
+
     const params = JSON.parse(e.postData.contents);
     const action = params.action;
 
@@ -36,7 +41,8 @@ function doPost(e) {
         return createResponse(false, "Unknown action");
     }
   } catch (error) {
-    return createResponse(false, error.toString());
+    Logger.log("エラー詳細: " + error.toString());
+    return createResponse(false, "サーバーエラー: " + error.toString());
   }
 }
 
@@ -45,6 +51,11 @@ function doPost(e) {
  */
 function doGet(e) {
   try {
+    // スプレッドシートIDチェック
+    if (SPREADSHEET_ID === "YOUR_SPREADSHEET_ID_HERE") {
+      return createResponse(false, "スプレッドシートIDが設定されていません");
+    }
+
     const action = e.parameter.action;
 
     switch (action) {
@@ -56,7 +67,8 @@ function doGet(e) {
         return createResponse(false, "Unknown action");
     }
   } catch (error) {
-    return createResponse(false, error.toString());
+    Logger.log("エラー詳細: " + error.toString());
+    return createResponse(false, "サーバーエラー: " + error.toString());
   }
 }
 

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セットアップチェック - SSAP提案システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .check-item {
+            background: #f7fafc;
+            border-left: 4px solid #cbd5e0;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .check-item.success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+        }
+        
+        .check-item.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        
+        .check-item.warning {
+            background: #fefce8;
+            border-left-color: #eab308;
+        }
+        
+        .check-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .check-message {
+            color: #4a5568;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .check-code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .status-icon {
+            font-size: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+        }
+        
+        .spinner {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 セットアップチェック</h1>
+        <p class="subtitle">SSAP提案システムの設定状況を確認します</p>
+        
+        <div id="checkResults">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>設定を確認しています...</p>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn" onclick="runCheck()">再チェック</button>
+            <button class="btn" onclick="testConnection()" id="testBtn" disabled>接続テスト</button>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        let checksData = [];
+        
+        // ページ読み込み時に自動実行
+        window.addEventListener('DOMContentLoaded', () => {
+            runCheck();
+        });
+        
+        function runCheck() {
+            checksData = [];
+            document.getElementById('checkResults').innerHTML = '<div class="loading"><div class="spinner"></div><p>設定を確認しています...</p></div>';
+            document.getElementById('testBtn').disabled = true;
+            
+            setTimeout(() => {
+                performChecks();
+                displayResults();
+            }, 500);
+        }
+        
+        function performChecks() {
+            // チェック1: GAS_WEB_APP_URLの設定確認
+            if (GAS_WEB_APP_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
+                checksData.push({
+                    status: 'error',
+                    title: 'GAS_WEB_APP_URLが未設定',
+                    message: 'js/config.js を開いて、Google Apps ScriptのデプロイURLを設定してください。',
+                    code: `const GAS_WEB_APP_URL = 'あなたのデプロイURL';`
+                });
+            } else if (!GAS_WEB_APP_URL.includes('script.google.com')) {
+                checksData.push({
+                    status: 'warning',
+                    title: 'GAS_WEB_APP_URLの形式が不正かもしれません',
+                    message: 'URLが正しいか確認してください。通常は https://script.google.com/macros/... で始まります。',
+                    code: `現在の設定: ${GAS_WEB_APP_URL}`
+                });
+            } else if (!GAS_WEB_APP_URL.endsWith('/exec')) {
+                checksData.push({
+                    status: 'warning',
+                    title: 'GAS_WEB_APP_URLが本番用URLではない可能性',
+                    message: 'URLは /exec で終わる必要があります。/dev で終わっている場合は開発版です。',
+                    code: `現在の設定: ${GAS_WEB_APP_URL}`
+                });
+            } else {
+                checksData.push({
+                    status: 'success',
+                    title: 'GAS_WEB_APP_URLが設定されています',
+                    message: 'デプロイURLが正しい形式で設定されています。',
+                    code: `${GAS_WEB_APP_URL.substring(0, 50)}...`
+                });
+                document.getElementById('testBtn').disabled = false;
+            }
+            
+            // チェック2: ローカルストレージの確認
+            const userInfo = getUserInfo();
+            if (userInfo.email && userInfo.name) {
+                checksData.push({
+                    status: 'success',
+                    title: 'ユーザー情報が保存されています',
+                    message: `名前: ${userInfo.name}, メール: ${userInfo.email}`,
+                });
+            } else {
+                checksData.push({
+                    status: 'warning',
+                    title: 'ユーザー情報が未保存',
+                    message: '初めての利用、または提案を投稿していません。問題ありません。',
+                });
+            }
+            
+            // チェック3: ブラウザの互換性
+            if (typeof fetch === 'function') {
+                checksData.push({
+                    status: 'success',
+                    title: 'ブラウザがFetch APIをサポート',
+                    message: 'このブラウザは正常に動作します。',
+                });
+            } else {
+                checksData.push({
+                    status: 'error',
+                    title: 'ブラウザが古い可能性',
+                    message: 'Fetch APIがサポートされていません。最新のブラウザを使用してください。',
+                });
+            }
+            
+            // チェック4: LocalStorageの動作確認
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                checksData.push({
+                    status: 'success',
+                    title: 'LocalStorageが利用可能',
+                    message: 'データの保存機能が正常に動作します。',
+                });
+            } catch (e) {
+                checksData.push({
+                    status: 'error',
+                    title: 'LocalStorageが利用不可',
+                    message: 'プライベートブラウジングモードの場合、一部機能が制限されます。',
+                });
+            }
+        }
+        
+        function displayResults() {
+            const container = document.getElementById('checkResults');
+            container.innerHTML = '';
+            
+            checksData.forEach(check => {
+                const div = document.createElement('div');
+                div.className = `check-item ${check.status}`;
+                
+                const icon = check.status === 'success' ? '✅' : 
+                            check.status === 'error' ? '❌' : '⚠️';
+                
+                let html = `
+                    <div class="check-title">
+                        <span class="status-icon">${icon}</span>
+                        ${check.title}
+                    </div>
+                    <div class="check-message">${check.message}</div>
+                `;
+                
+                if (check.code) {
+                    html += `<div class="check-code">${check.code}</div>`;
+                }
+                
+                div.innerHTML = html;
+                container.appendChild(div);
+            });
+        }
+        
+        async function testConnection() {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            btn.textContent = '接続テスト中...';
+            
+            try {
+                console.log('📡 接続テスト開始...');
+                
+                // GETリクエストテスト
+                const url = `${GAS_WEB_APP_URL}?action=getProposals`;
+                console.log('📤 テストURL:', url);
+                
+                const response = await fetch(url);
+                console.log('📥 ステータス:', response.status);
+                
+                const text = await response.text();
+                console.log('📥 レスポンス:', text);
+                
+                const result = JSON.parse(text);
+                
+                if (result.success) {
+                    alert(`✅ 接続テスト成功！\n\n取得した提案数: ${result.data.proposals.length}件\n\nシステムは正常に動作しています。`);
+                } else {
+                    alert(`⚠️ 接続はできましたが、エラーが返されました。\n\nエラー内容: ${result.message}\n\nGASの設定を確認してください。`);
+                }
+            } catch (error) {
+                console.error('❌ 接続テスト失敗:', error);
+                alert(`❌ 接続テスト失敗\n\nエラー内容: ${error.message}\n\n考えられる原因:\n1. GASのデプロイURLが間違っている\n2. GASが「全員」アクセス可能に設定されていない\n3. スプレッドシートIDが設定されていない\n4. インターネット接続に問題がある\n\nTROUBLESHOOTING.mdを参照してください。`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '接続テスト';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -7,15 +7,17 @@
  */
 async function sendRequest(action, data = {}) {
     if (GAS_WEB_APP_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
-        throw new Error('GAS_WEB_APP_URLが設定されていません。js/config.jsを確認してください。');
+        throw new Error('❌ GAS_WEB_APP_URLが設定されていません。\n\njs/config.jsファイルを開いて、GASのデプロイURLを設定してください。');
     }
 
     try {
+        console.log('📤 送信データ:', { action, ...data });
+        console.log('📍 送信先URL:', GAS_WEB_APP_URL);
+        
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'cors',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain', // CORSプリフライト回避
             },
             body: JSON.stringify({
                 action: action,
@@ -23,11 +25,16 @@ async function sendRequest(action, data = {}) {
             })
         });
 
+        console.log('📥 レスポンスステータス:', response.status);
+        
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status}\n\n考えられる原因:\n- GASのデプロイURLが間違っている\n- GASが「全員」アクセス可能に設定されていない\n- スプレッドシートIDが設定されていない`);
         }
 
-        const result = await response.json();
+        const text = await response.text();
+        console.log('📥 レスポンス本文:', text);
+        
+        const result = JSON.parse(text);
         
         if (!result.success) {
             throw new Error(result.message || 'リクエストに失敗しました');
@@ -35,8 +42,19 @@ async function sendRequest(action, data = {}) {
 
         return result.data;
     } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+        console.error('❌ API Error 詳細:', {
+            message: error.message,
+            stack: error.stack,
+            url: GAS_WEB_APP_URL
+        });
+        
+        // より詳細なエラーメッセージを生成
+        let detailedError = error.message;
+        if (error.message.includes('fetch')) {
+            detailedError = `ネットワークエラーが発生しました。\n\n考えられる原因:\n1. GAS_WEB_APP_URLが正しく設定されていない\n2. GASがWebアプリとして正しくデプロイされていない\n3. インターネット接続に問題がある\n\n設定URL: ${GAS_WEB_APP_URL}`;
+        }
+        
+        throw new Error(detailedError);
     }
 }
 
@@ -45,21 +63,27 @@ async function sendRequest(action, data = {}) {
  */
 async function getRequest(action) {
     if (GAS_WEB_APP_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
-        throw new Error('GAS_WEB_APP_URLが設定されていません。js/config.jsを確認してください。');
+        throw new Error('❌ GAS_WEB_APP_URLが設定されていません。\n\njs/config.jsファイルを開いて、GASのデプロイURLを設定してください。');
     }
 
     try {
         const url = `${GAS_WEB_APP_URL}?action=${action}`;
+        console.log('📤 GETリクエスト:', url);
+        
         const response = await fetch(url, {
             method: 'GET',
-            mode: 'cors',
         });
+
+        console.log('📥 レスポンスステータス:', response.status);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const result = await response.json();
+        const text = await response.text();
+        console.log('📥 レスポンス本文:', text);
+        
+        const result = JSON.parse(text);
         
         if (!result.success) {
             throw new Error(result.message || 'リクエストに失敗しました');
@@ -67,7 +91,7 @@ async function getRequest(action) {
 
         return result.data;
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('❌ API Error:', error);
         throw error;
     }
 }
