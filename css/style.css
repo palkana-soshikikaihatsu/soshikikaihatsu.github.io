@@ -10,7 +10,7 @@
 }
 
 :root {
-    /* パルシステム風カラーパレット - ライトモード（デフォルト） */
+    /* パルシステム風カラーパレット */
     --primary-color: #4ade80;
     --primary-light: #86efac;
     --primary-dark: #22c55e;
@@ -20,7 +20,7 @@
     --warning-color: #fbbf24;
     --accent-color: #f59e0b;
     
-    /* ニュートラルカラー - ライトモード */
+    /* ニュートラルカラー */
     --bg-color: #fafaf9;
     --bg-secondary: #ffffff;
     --card-bg: #ffffff;
@@ -29,62 +29,24 @@
     --text-secondary: #78716c;
     --border-color: #e7e5e4;
     
-    /* グラスモーフィズム - ライトモード */
+    /* グラスモーフィズム */
     --glass-bg: rgba(255, 255, 255, 0.85);
     --glass-border: rgba(68, 64, 60, 0.1);
     
-    /* シャドウ - ライトモード */
+    /* シャドウ */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
     --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.15);
     --shadow-glow: 0 0 30px rgba(74, 222, 128, 0.4);
     --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.15);
     
-    /* グラデーション - ライトモード */
+    /* グラデーション */
     --gradient-primary: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
     --gradient-secondary: linear-gradient(135deg, #fb923c 0%, #f59e0b 100%);
     --gradient-success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
     --gradient-card: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);
     --gradient-overlay: linear-gradient(180deg, transparent 0%, rgba(250, 250, 249, 0.9) 100%);
     --gradient-warm: linear-gradient(135deg, #fbbf24 0%, #fb923c 50%, #f59e0b 100%);
-}
-
-/* ダークモードテーマ */
-[data-theme="dark"] {
-    /* ダークモードカラー */
-    --primary-color: #4ade80;
-    --primary-light: #86efac;
-    --primary-dark: #22c55e;
-    --secondary-color: #fb923c;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --warning-color: #fbbf24;
-    
-    /* ニュートラルカラー - ダークモード */
-    --bg-color: #0f172a;
-    --bg-secondary: #1e293b;
-    --card-bg: rgba(255, 255, 255, 0.05);
-    --card-bg-solid: #1e293b;
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --border-color: rgba(148, 163, 184, 0.1);
-    
-    /* グラスモーフィズム - ダークモード */
-    --glass-bg: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(255, 255, 255, 0.18);
-    
-    /* シャドウ - ダークモード */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 30px rgba(74, 222, 128, 0.5);
-    --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.6);
-    
-    /* グラデーション - ダークモード */
-    --gradient-primary: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-    --gradient-secondary: linear-gradient(135deg, #fb923c 0%, #f59e0b 100%);
-    --gradient-card: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);
-    --gradient-overlay: linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.8) 100%);
 }
 
 body {
@@ -98,16 +60,6 @@ body {
     color: var(--text-primary);
     line-height: 1.7;
     min-height: 100vh;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* ダークモードの背景 */
-[data-theme="dark"] body {
-    background-image: 
-        radial-gradient(at 20% 20%, rgba(74, 222, 128, 0.25) 0px, transparent 50%),
-        radial-gradient(at 80% 20%, rgba(251, 146, 60, 0.25) 0px, transparent 50%),
-        radial-gradient(at 80% 80%, rgba(251, 191, 36, 0.25) 0px, transparent 50%),
-        radial-gradient(at 20% 80%, rgba(16, 185, 129, 0.25) 0px, transparent 50%);
 }
 
 /* ========== コンテナ ========== */
@@ -202,35 +154,6 @@ body {
     background: rgba(255, 255, 255, 0.25);
     transform: translateX(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* ========== テーマ切り替えボタン ========== */
-.theme-toggle {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: var(--gradient-primary);
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.theme-toggle:hover {
-    transform: scale(1.1) rotate(20deg);
-    box-shadow: var(--shadow-lg);
-}
-
-.theme-toggle:active {
-    transform: scale(0.95);
 }
 
 /* ========== メインコンテンツ ========== */
