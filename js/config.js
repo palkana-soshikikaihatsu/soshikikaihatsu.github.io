@@ -5,7 +5,7 @@
  */
 
 // Google Apps ScriptのWebアプリURL（デプロイ後に設定）
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzfHaxC48pJZG4p31zeBwxdZ5dYV1_pOLhkeFFZDm5xRrzYDaVwDoIv8dAxSV5-7fRbMQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyAMjNQIYVrRCH_eQfb-UCUpfimF-ZTd9lWB0kmiDs06r-umMPYcOfpzPMotqlXY2iFnQ/exec';
 
 // ローカルストレージキー
 const STORAGE_KEYS = {
@@ -73,4 +73,3 @@ function getLikedProposals() {
 function isProposalLiked(proposalId) {
     return getLikedProposals().includes(proposalId);
 }
-

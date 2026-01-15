@@ -230,35 +230,85 @@ function updateStats() {
 }
 
 /**
- * いいねをトグル
+ * いいねをトグル（楽観的UI更新）
  */
 async function toggleLike(proposalId) {
     const isLiked = isProposalLiked(proposalId);
-    const button = document.querySelector(`button[data-proposal-id="${proposalId}"]`);
+    const proposal = allProposals.find(p => p.id === proposalId);
     
-    if (!button) return;
+    if (!proposal) return;
     
-    // ボタンを一時的に無効化
-    button.disabled = true;
+    // 1. 即座にUIを更新（楽観的更新）
+    if (isLiked) {
+        // いいね解除の場合
+        removeLikedProposal(proposalId);
+        proposal.likeCount = Math.max(0, proposal.likeCount - 1);
+    } else {
+        // いいね追加の場合
+        saveLikedProposal(proposalId);
+        proposal.likeCount++;
+    }
     
+    // UIを即座に更新
+    applyFilters();
+    
+    // 数字アニメーションを追加
+    addNumberAnimation(proposalId);
+    
+    // 2. バックグラウンドでサーバーに送信
     try {
         if (isLiked) {
-            // いいね解除
             await removeLike(proposalId, userEmail);
-            removeLikedProposal(proposalId);
         } else {
-            // いいね追加
             await addLike(proposalId, userEmail);
-            saveLikedProposal(proposalId);
         }
         
-        // 提案を再読み込み
+        // 3. サーバーから最新データを取得して同期
         await loadProposals(true);
         
     } catch (error) {
         console.error('いいね処理エラー:', error);
-        showError(error.message || 'いいね処理に失敗しました');
-        button.disabled = false;
+        
+        // 4. エラーが発生した場合は元に戻す
+        if (isLiked) {
+            saveLikedProposal(proposalId);
+            proposal.likeCount++;
+        } else {
+            removeLikedProposal(proposalId);
+            proposal.likeCount = Math.max(0, proposal.likeCount - 1);
+        }
+        
+        applyFilters();
+        showError(error.message || 'いいね処理に失敗しました。元に戻しました。');
+    }
+}
+
+/**
+ * 数字アニメーションを追加
+ */
+function addNumberAnimation(proposalId) {
+    // カード内の数字要素を取得
+    const card = document.querySelector(`.proposal-card[data-id="${proposalId}"]`);
+    if (card) {
+        const numberElement = card.querySelector('.like-number');
+        if (numberElement) {
+            numberElement.classList.add('updating');
+            setTimeout(() => {
+                numberElement.classList.remove('updating');
+            }, 300);
+        }
+    }
+    
+    // モーダル内の数字要素も更新
+    const modal = document.getElementById('proposalModal');
+    if (modal && modal.style.display === 'flex') {
+        const modalNumber = modal.querySelector('.like-number');
+        if (modalNumber) {
+            modalNumber.classList.add('updating');
+            setTimeout(() => {
+                modalNumber.classList.remove('updating');
+            }, 300);
+        }
     }
 }
 
