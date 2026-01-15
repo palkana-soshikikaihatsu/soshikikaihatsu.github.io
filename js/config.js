@@ -139,3 +139,4 @@ function getLikedProposals() {
 function isProposalLiked(proposalId) {
     return getLikedProposals().includes(proposalId);
 }
+
