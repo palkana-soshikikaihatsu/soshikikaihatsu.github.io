@@ -92,15 +92,21 @@ function addProposal(params) {
     params.category || "", // D: カテゴリ
     params.submitterName || "匿名", // E: 提案者名
     params.submitterEmail || "", // F: 提案者メール
-    now.toISOString(), // G: 投稿日時
-    expiryDate.toISOString(), // H: 期限日時
+    now, // G: 投稿日時（Dateオブジェクト）
+    expiryDate, // H: 期限日時（Dateオブジェクト）
     0, // I: いいね数
     "", // J: いいねユーザーリスト（カンマ区切り）
     "掲載中", // K: ステータス（掲載中/実施候補/期限切れ）
-    now.toISOString(), // L: 更新日時
+    now, // L: 更新日時（Dateオブジェクト）
   ];
 
   sheet.appendRow(rowData);
+
+  // G, H, L列に日時フォーマットを適用
+  const lastRow = sheet.getLastRow();
+  sheet.getRange(lastRow, 7).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 投稿日時
+  sheet.getRange(lastRow, 8).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 期限日時
+  sheet.getRange(lastRow, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 更新日時
 
   return createResponse(true, "提案を投稿しました", {
     proposalId: proposalId,
@@ -200,7 +206,8 @@ function addLike(params) {
 
   sheet.getRange(row, 9).setValue(newLikeCount); // いいね数
   sheet.getRange(row, 10).setValue(likedUsersList.join(",")); // ユーザーリスト
-  sheet.getRange(row, 12).setValue(new Date().toISOString()); // 更新日時
+  sheet.getRange(row, 12).setValue(new Date()); // 更新日時
+  sheet.getRange(row, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 日時フォーマット
 
   // 実施候補への昇格チェック
   if (newLikeCount >= TOTAL_EMPLOYEES) {
@@ -243,7 +250,8 @@ function removeLike(params) {
 
   sheet.getRange(row, 9).setValue(newLikeCount);
   sheet.getRange(row, 10).setValue(likedUsersList.join(","));
-  sheet.getRange(row, 12).setValue(new Date().toISOString());
+  sheet.getRange(row, 12).setValue(new Date());
+  sheet.getRange(row, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss");
 
   return createResponse(true, "いいねを取り消しました", {
     likeCount: newLikeCount,
