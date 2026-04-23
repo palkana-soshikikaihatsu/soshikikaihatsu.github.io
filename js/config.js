@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
 
 // その他の設定
 const CONFIG = {
-    TOTAL_EMPLOYEES: 600,        // 全従業員数
+    TOTAL_EMPLOYEES: 100,        // 全従業員数
     PROPOSAL_DURATION_DAYS: 30,  // 提案の掲載期間
     AUTO_REFRESH_INTERVAL: 30000 // 自動更新間隔（ミリ秒）
 };
