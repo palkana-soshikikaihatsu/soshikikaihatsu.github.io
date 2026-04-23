@@ -86,6 +86,8 @@ function applyFilters() {
     }
     
     // ステータスフィルター
+    filtered = filtered.filter(p => p.status === '掲載中' || p.status === '実施候補');
+
     const status = statusFilter.value;
     if (status !== 'all') {
         filtered = filtered.filter(p => p.status === status);
