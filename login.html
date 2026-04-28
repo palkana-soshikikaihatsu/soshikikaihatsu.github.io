@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ログイン - いいね！パルプロジェクト</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="header header-compact">
+            <a href="index.html" class="btn-back">← ホームに戻る</a>
+            <div class="header-content">
+                <h1 class="header-title">🔐 管理者ログイン</h1>
+                <p class="header-subtitle">管理機能にアクセスするにはログインが必要です</p>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <section class="form-section">
+                <div class="login-form-container" id="loginFormContainer">
+                    <form id="loginForm" class="login-form">
+                        <div class="login-icon">🔒</div>
+                        <h2>管理者認証</h2>
+                        
+                        <div class="form-group">
+                            <label for="adminId" class="form-label required">管理者ID</label>
+                            <input type="text" id="adminId" name="adminId" class="form-input" 
+                                   placeholder="管理者IDを入力" required autocomplete="username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password" class="form-label required">パスワード</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="password" name="password" class="form-input" 
+                                       placeholder="パスワードを入力" required autocomplete="current-password">
+                                <button type="button" class="password-toggle" id="passwordToggle">
+                                    <span class="eye-icon">👁️</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe">
+                                ログイン状態を保持する
+                            </label>
+                        </div>
+
+                        <div id="loginError" class="error-message" style="display: none;"></div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large btn-full">
+                                <span class="btn-icon">🔓</span>
+                                ログイン
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ログイン中表示 -->
+                <div class="loading-container" id="loginLoading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>認証中...</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- フッター -->
+        <footer class="footer">
+            <p>&copy; 2026 いいね！パルプロジェクト | 組織開発課</p>
+        </footer>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 既にログイン済みの場合は管理画面にリダイレクト
+            if (isAdminLoggedIn()) {
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            // パスワード表示切り替え
+            const passwordToggle = document.getElementById('passwordToggle');
+            const passwordInput = document.getElementById('password');
+            
+            passwordToggle.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                passwordToggle.querySelector('.eye-icon').textContent = type === 'password' ? '👁️' : '🙈';
+            });
+
+            // ログインフォーム送信
+            const loginForm = document.getElementById('loginForm');
+            const loginError = document.getElementById('loginError');
+            const loginLoading = document.getElementById('loginLoading');
+            const loginFormContainer = document.getElementById('loginFormContainer');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const adminId = document.getElementById('adminId').value.trim();
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('rememberMe').checked;
+
+                // バリデーション
+                if (!adminId || !password) {
+                    showLoginError('管理者IDとパスワードを入力してください');
+                    return;
+                }
+
+                // ローディング表示
+                loginFormContainer.style.display = 'none';
+                loginLoading.style.display = 'flex';
+                loginError.style.display = 'none';
+
+                try {
+                    const result = await adminLogin(adminId, password, rememberMe);
+                    
+                    if (result.success) {
+                        window.location.href = 'admin.html';
+                    } else {
+                        showLoginError(result.message || 'ログインに失敗しました');
+                        loginFormContainer.style.display = 'block';
+                        loginLoading.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('ログインエラー:', error);
+                    showLoginError('サーバーとの通信に失敗しました');
+                    loginFormContainer.style.display = 'block';
+                    loginLoading.style.display = 'none';
+                }
+            });
+
+            function showLoginError(message) {
+                loginError.textContent = message;
+                loginError.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -12,8 +12,10 @@
 // ========== 設定 ==========
 const SPREADSHEET_ID = "1_JbzctKYfqSLwPJ-7aBajENreTJFCjk_Q-J4KQThDzY"; // スプレッドシートIDを設定
 const PROPOSAL_SHEET_NAME = "提案一覧";
+const ADMIN_SHEET_NAME = "管理者";
 const TOTAL_EMPLOYEES = 600; // 全従業員数
 const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
+const AUTH_TOKEN_EXPIRY_HOURS = 24; // 認証トークン有効期限（時間）
 
 // ========== メイン関数 ==========
 
@@ -37,6 +39,16 @@ function doPost(e) {
         return addLike(params);
       case "removeLike":
         return removeLike(params);
+      case "adminLogin":
+        return adminLogin(params);
+      case "updateProposal":
+        return updateProposal(params);
+      case "deleteProposal":
+        return deleteProposal(params);
+      case "changePassword":
+        return changePassword(params);
+      case "cleanExpired":
+        return cleanExpiredWithAuth(params);
       default:
         return createResponse(false, "Unknown action");
     }
@@ -277,6 +289,199 @@ function cleanExpiredProposals() {
   }
 
   return createResponse(true, `${deletedCount}件の期限切れ提案を削除しました`);
+}
+
+// ========== 管理者認証関数 ==========
+
+/**
+ * 管理者ログイン
+ */
+function adminLogin(params) {
+  const adminId = params.adminId;
+  const password = params.password;
+
+  if (!adminId || !password) {
+    return createResponse(false, "管理者IDとパスワードを入力してください");
+  }
+
+  const adminSheet = getOrCreateAdminSheet();
+  const data = adminSheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (row[0] === adminId && row[1] === password) {
+      const token = generateAuthToken();
+      const expiresAt = new Date(
+        new Date().getTime() + AUTH_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000
+      );
+
+      adminSheet.getRange(i + 1, 4).setValue(token);
+      adminSheet.getRange(i + 1, 5).setValue(expiresAt);
+      adminSheet.getRange(i + 1, 5).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+
+      return createResponse(true, "ログイン成功", {
+        success: true,
+        adminName: row[2] || adminId,
+        token: token,
+        expiresAt: expiresAt.toISOString(),
+      });
+    }
+  }
+
+  return createResponse(false, "管理者IDまたはパスワードが正しくありません");
+}
+
+/**
+ * 認証トークンを検証
+ */
+function verifyAuthToken(token) {
+  if (!token) return null;
+
+  const adminSheet = getOrCreateAdminSheet();
+  const data = adminSheet.getDataRange().getValues();
+  const now = new Date();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const storedToken = row[3];
+    const expiresAt = new Date(row[4]);
+
+    if (storedToken === token && now < expiresAt) {
+      return {
+        adminId: row[0],
+        adminName: row[2] || row[0],
+        row: i + 1,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 提案を更新（管理者用）
+ */
+function updateProposal(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  const sheet = getOrCreateSheet();
+  const proposalId = params.proposalId;
+  const row = findProposalRow(sheet, proposalId);
+
+  if (!row) {
+    return createResponse(false, "提案が見つかりません");
+  }
+
+  if (params.title) sheet.getRange(row, 2).setValue(params.title);
+  if (params.description) sheet.getRange(row, 3).setValue(params.description);
+  if (params.category) sheet.getRange(row, 4).setValue(params.category);
+  if (params.status) sheet.getRange(row, 11).setValue(params.status);
+
+  sheet.getRange(row, 12).setValue(new Date());
+  sheet.getRange(row, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+
+  return createResponse(true, "提案を更新しました");
+}
+
+/**
+ * 提案を削除（管理者用）
+ */
+function deleteProposal(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  const sheet = getOrCreateSheet();
+  const proposalId = params.proposalId;
+  const row = findProposalRow(sheet, proposalId);
+
+  if (!row) {
+    return createResponse(false, "提案が見つかりません");
+  }
+
+  sheet.deleteRow(row);
+  return createResponse(true, "提案を削除しました");
+}
+
+/**
+ * パスワード変更（管理者用）
+ */
+function changePassword(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  const adminSheet = getOrCreateAdminSheet();
+  const currentPassword = adminSheet.getRange(admin.row, 2).getValue();
+
+  if (currentPassword !== params.currentPassword) {
+    return createResponse(false, "現在のパスワードが正しくありません");
+  }
+
+  if (!params.newPassword || params.newPassword.length < 6) {
+    return createResponse(false, "新しいパスワードは6文字以上で設定してください");
+  }
+
+  adminSheet.getRange(admin.row, 2).setValue(params.newPassword);
+  return createResponse(true, "パスワードを変更しました");
+}
+
+/**
+ * 期限切れ提案を削除（認証付き）
+ */
+function cleanExpiredWithAuth(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  return cleanExpiredProposals();
+}
+
+/**
+ * 認証トークンを生成
+ */
+function generateAuthToken() {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "";
+  for (let i = 0; i < 64; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+/**
+ * 管理者シートを取得または作成
+ */
+function getOrCreateAdminSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(ADMIN_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(ADMIN_SHEET_NAME);
+    sheet.appendRow([
+      "管理者ID",
+      "パスワード",
+      "表示名",
+      "認証トークン",
+      "トークン有効期限",
+    ]);
+
+    const headerRange = sheet.getRange(1, 1, 1, 5);
+    headerRange.setFontWeight("bold");
+    headerRange.setBackground("#4285f4");
+    headerRange.setFontColor("#ffffff");
+
+    sheet.appendRow(["admin", "admin123", "管理者", "", ""]);
+  }
+
+  return sheet;
 }
 
 // ========== ユーティリティ関数 ==========
