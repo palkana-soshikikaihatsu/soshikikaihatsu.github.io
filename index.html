@@ -5,141 +5,257 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>いいね！パルプロジェクト - ホーム</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <!-- ヘッダー -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="header-title">🚀 いいね！パルプロジェクト</h1>
-                <p class="header-subtitle">みんなのアイデアで組織をより良く</p>
+<body class="home-page">
+    <!-- ヒーローセクション -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="hero-shape hero-shape-1"></div>
+            <div class="hero-shape hero-shape-2"></div>
+            <div class="hero-shape hero-shape-3"></div>
+            <div class="hero-particles"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                組織改善プラットフォーム
             </div>
-        </header>
-
-        <!-- メインコンテンツ -->
-        <main class="main-content">
-            <!-- 説明セクション -->
-            <section class="info-section">
-                <div class="info-card">
-                    <h2>📝 いいね！パルプロジェクトとは？</h2>
-                    <p>
-                        組織の改善提案を投稿・共有し、職員全員で投票できるシステムです。組織開発推進会議での精査後、<br>
-                        <strong>100票</strong>を獲得した提案は<strong class="highlight">実施ステージ</strong>に昇格します！
-                    </p>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-icon">📋</div>
-                        <h3>提案投稿</h3>
-                        <p>業務改善や新しいアイデアを自由に投稿</p>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-icon">👍</div>
-                        <h3>投票機能</h3>
-                        <p>良いと思う提案にいいねで投票</p>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-icon">⏱️</div>
-                        <h3>掲載期間</h3>
-                        <p>提案は30日間掲載され自動で期限管理</p>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-icon">🎯</div>
-                        <h3>実施候補</h3>
-                        <p>100票で実施に向けて関連部署と連携</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- アクションボタン -->
-            <section class="action-section">
-                <a href="submit.html" class="btn btn-primary btn-large">
-                    <span class="btn-icon">✏️</span>
-                    新しい提案を投稿する
+            <h1 class="hero-title">
+                <span class="hero-title-main">いいね！</span>
+                <span class="hero-title-sub">パルプロジェクト</span>
+            </h1>
+            <p class="hero-description">
+                あなたのアイデアが組織を変える。<br>
+                みんなの投票で実現へ。
+            </p>
+            <div class="hero-actions">
+                <a href="submit.html" class="btn btn-hero-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    提案を投稿する
                 </a>
-                <a href="proposals.html" class="btn btn-secondary btn-large">
-                    <span class="btn-icon">📊</span>
+                <a href="proposals.html" class="btn btn-hero-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
                     提案一覧を見る
                 </a>
-            </section>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <span class="hero-stat-number" id="totalProposals">-</span>
+                    <span class="hero-stat-label">掲載中</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-number" id="candidateProposals">-</span>
+                    <span class="hero-stat-label">実施候補</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-number">100</span>
+                    <span class="hero-stat-label">必要票数</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-scroll-indicator">
+            <span>詳しく見る</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+        </div>
+    </section>
 
-            <!-- 統計情報 -->
-            <section class="stats-section">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalProposals">-</div>
-                        <div class="stat-label">掲載中の提案</div>
+    <!-- 特徴セクション -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">FEATURES</span>
+                <h2 class="section-title">いいね！パルプロジェクトとは？</h2>
+                <p class="section-description">
+                    組織の改善提案を投稿・共有し、職員全員で投票できるシステムです。<br>
+                    <strong>100票</strong>を獲得した提案は<span class="text-accent">実施ステージ</span>に昇格します！
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card" data-aos="fade-up">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="candidateProposals">-</div>
-                        <div class="stat-label">実施候補</div>
+                    <h3>提案投稿</h3>
+                    <p>業務改善や新しいアイデアを自由に投稿。誰でも組織をより良くする提案ができます。</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon feature-icon-like">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                        </svg>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number">100</div>
-                        <div class="stat-label">必要投票数</div>
+                    <h3>投票機能</h3>
+                    <p>良いと思う提案にいいねで投票。あなたの一票が提案の実現を後押しします。</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon feature-icon-time">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <h3>掲載期間</h3>
+                    <p>提案は30日間掲載され自動で期限管理。タイムリーな投票を促進します。</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon feature-icon-target">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="6"></circle>
+                            <circle cx="12" cy="12" r="2"></circle>
+                        </svg>
+                    </div>
+                    <h3>実施候補</h3>
+                    <p>100票を獲得すると実施候補に。関連部署と連携して実現に向けて動きます。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 使い方セクション -->
+    <section class="howto">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">HOW TO USE</span>
+                <h2 class="section-title">4ステップで簡単参加</h2>
+            </div>
+            
+            <div class="howto-timeline">
+                <div class="howto-line"></div>
+                
+                <div class="howto-item" data-aos="fade-right">
+                    <div class="howto-number">01</div>
+                    <div class="howto-content">
+                        <div class="howto-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                        </div>
+                        <h3>提案を投稿</h3>
+                        <p>「新しい提案を投稿する」ボタンから、あなたのアイデアを投稿してください。</p>
                     </div>
                 </div>
-            </section>
-
-            <!-- 使い方 -->
-            <section class="howto-section">
-                <h2>📖 使い方</h2>
-                <div class="howto-steps">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <h3>提案を投稿</h3>
-                            <p>「新しい提案を投稿する」ボタンから、あなたのアイデアを投稿してください。</p>
+                
+                <div class="howto-item" data-aos="fade-left">
+                    <div class="howto-number">02</div>
+                    <div class="howto-content">
+                        <div class="howto-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
                         </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <h3>提案を閲覧</h3>
-                            <p>「提案一覧を見る」から、他の従業員が投稿した提案を確認できます。</p>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <h3>いいねで投票</h3>
-                            <p>良いと思った提案に「いいね」ボタンで投票しましょう。</p>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">4</div>
-                        <div class="step-content">
-                            <h3>実施候補へ</h3>
-                            <p>100票を獲得した提案は、関連部署と連携し実施に向けて動きます。</p>
-                        </div>
+                        <h3>提案を閲覧</h3>
+                        <p>「提案一覧を見る」から、他の従業員が投稿した提案を確認できます。</p>
                     </div>
                 </div>
-            </section>
-        </main>
+                
+                <div class="howto-item" data-aos="fade-right">
+                    <div class="howto-number">03</div>
+                    <div class="howto-content">
+                        <div class="howto-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                            </svg>
+                        </div>
+                        <h3>いいねで投票</h3>
+                        <p>良いと思った提案に「いいね」ボタンで投票しましょう。</p>
+                    </div>
+                </div>
+                
+                <div class="howto-item" data-aos="fade-left">
+                    <div class="howto-number">04</div>
+                    <div class="howto-content">
+                        <div class="howto-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </div>
+                        <h3>実施へ</h3>
+                        <p>100票を獲得した提案は、関連部署と連携し実施に向けて動きます。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <!-- フッター -->
-        <footer class="footer">
-            <p>&copy; 2026 いいね！パルプロジェクト | 組織開発課</p>
-            <p class="footer-admin-link"><a href="login.html">🔐 管理者ログイン</a></p>
-        </footer>
-    </div>
+    <!-- CTAセクション -->
+    <section class="cta">
+        <div class="cta-bg"></div>
+        <div class="container">
+            <div class="cta-content">
+                <h2>あなたのアイデアを<br>今すぐ投稿しよう</h2>
+                <p>小さなアイデアが、大きな変化を生み出す。</p>
+                <a href="submit.html" class="btn btn-cta">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    提案を投稿する
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer class="footer-new">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>いいね！パルプロジェクト</h3>
+                    <p>みんなのアイデアで組織をより良く</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">ホーム</a>
+                    <a href="submit.html">提案投稿</a>
+                    <a href="proposals.html">提案一覧</a>
+                    <a href="login.html">管理者</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 いいね！パルプロジェクト | 組織開発課</p>
+            </div>
+        </div>
+    </footer>
 
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script>
-        // ページ読み込み時に統計情報を取得
         document.addEventListener('DOMContentLoaded', async () => {
+            // 統計情報を取得
             try {
                 const data = await getProposals();
                 const proposals = data.proposals || [];
                 
-                // 掲載中の提案数
                 const activeProposals = proposals.filter(p => p.status === '掲載中' || p.status === '実施候補');
                 document.getElementById('totalProposals').textContent = activeProposals.length;
                 
-                // 実施候補数
                 const candidates = proposals.filter(p => p.status === '実施候補');
                 document.getElementById('candidateProposals').textContent = candidates.length;
             } catch (error) {
@@ -147,6 +263,24 @@
                 document.getElementById('totalProposals').textContent = '0';
                 document.getElementById('candidateProposals').textContent = '0';
             }
+
+            // スクロールアニメーション
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('aos-animate');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('[data-aos]').forEach(el => {
+                observer.observe(el);
+            });
         });
     </script>
 </body>
