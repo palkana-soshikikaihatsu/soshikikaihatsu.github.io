@@ -74,6 +74,13 @@
                             <div class="admin-stat-label">総いいね数</div>
                         </div>
                     </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon">⏰</div>
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-number" id="statExpired">-</div>
+                            <div class="admin-stat-label">期限切れ</div>
+                        </div>
+                    </div>
                 </div>
 
                 <h2 class="section-title">🏆 人気の提案トップ5</h2>
@@ -225,6 +232,19 @@
                             <option value="実施候補">実施候補</option>
                             <option value="期限切れ">期限切れ</option>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="extendDays" class="form-label">期限延長（日数）</label>
+                        <select id="extendDays" class="form-select">
+                            <option value="0">延長しない</option>
+                            <option value="7">+7日</option>
+                            <option value="14">+14日</option>
+                            <option value="30">+30日（1ヶ月）</option>
+                            <option value="60">+60日（2ヶ月）</option>
+                            <option value="90">+90日（3ヶ月）</option>
+                        </select>
+                        <p class="form-help">期限切れの提案を再掲載する場合は期限を延長してください</p>
                     </div>
 
                     <div class="form-actions">

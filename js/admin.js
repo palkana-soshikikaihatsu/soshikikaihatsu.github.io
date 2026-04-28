@@ -111,7 +111,8 @@ function setupSettings() {
  */
 async function loadDashboardData() {
     try {
-        const data = await getProposals();
+        const authToken = getAuthToken();
+        const data = await getAllProposals(authToken);
         allProposals = data.proposals || [];
 
         updateStats();
@@ -129,12 +130,18 @@ async function loadDashboardData() {
 function updateStats() {
     const active = allProposals.filter(p => p.status === '掲載中');
     const candidates = allProposals.filter(p => p.status === '実施候補');
+    const expired = allProposals.filter(p => p.status === '期限切れ');
     const totalLikes = allProposals.reduce((sum, p) => sum + (p.likeCount || 0), 0);
 
     document.getElementById('statTotal').textContent = allProposals.length;
     document.getElementById('statActive').textContent = active.length;
     document.getElementById('statCandidate').textContent = candidates.length;
     document.getElementById('statTotalLikes').textContent = totalLikes;
+    
+    const expiredStat = document.getElementById('statExpired');
+    if (expiredStat) {
+        expiredStat.textContent = expired.length;
+    }
 }
 
 /**
@@ -209,7 +216,8 @@ async function loadProposalsTable() {
     `;
 
     try {
-        const data = await getProposals();
+        const authToken = getAuthToken();
+        const data = await getAllProposals(authToken);
         allProposals = data.proposals || [];
         renderProposalsTable(allProposals);
     } catch (error) {
@@ -299,6 +307,14 @@ function openEditModal(proposalId) {
     document.getElementById('editDescription').value = proposal.description;
     document.getElementById('editCategory').value = proposal.category;
     document.getElementById('editStatus').value = proposal.status;
+    
+    const extendDaysSelect = document.getElementById('extendDays');
+    extendDaysSelect.value = '0';
+    
+    // 期限切れの提案は期限延長を推奨
+    if (proposal.status === '期限切れ' || proposal.daysRemaining <= 0) {
+        extendDaysSelect.value = '30';
+    }
 
     document.getElementById('editModal').style.display = 'flex';
 }
@@ -323,17 +339,21 @@ async function handleEditSubmit(e) {
     e.preventDefault();
 
     const proposalId = document.getElementById('editProposalId').value;
+    const extendDays = parseInt(document.getElementById('extendDays').value) || 0;
+    
     const data = {
         proposalId: proposalId,
         title: document.getElementById('editTitle').value,
         description: document.getElementById('editDescription').value,
         category: document.getElementById('editCategory').value,
-        status: document.getElementById('editStatus').value
+        status: document.getElementById('editStatus').value,
+        extendDays: extendDays
     };
 
     try {
         await sendAuthenticatedRequest('updateProposal', data);
         document.getElementById('editModal').style.display = 'none';
+        document.getElementById('extendDays').value = '0';
         showAdminSuccess('提案を更新しました');
         loadProposalsTable();
         loadDashboardData();

@@ -111,6 +111,30 @@ async function getProposals() {
 }
 
 /**
+ * 全提案を取得（管理者用、期限切れ含む）
+ */
+async function getAllProposals(authToken) {
+    if (GAS_WEB_APP_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
+        throw new Error('GAS_WEB_APP_URLが設定されていません');
+    }
+
+    const url = `${GAS_WEB_APP_URL}?action=getAllProposals&authToken=${encodeURIComponent(authToken)}`;
+    const response = await fetch(url, { method: 'GET' });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = JSON.parse(await response.text());
+    
+    if (!result.success) {
+        throw new Error(result.message || 'リクエストに失敗しました');
+    }
+
+    return result.data;
+}
+
+/**
  * いいねを追加
  */
 async function addLike(proposalId, userId) {

@@ -73,6 +73,8 @@ function doGet(e) {
     switch (action) {
       case "getProposals":
         return getProposals();
+      case "getAllProposals":
+        return getAllProposals(e);
       case "cleanExpired":
         return cleanExpiredProposals();
       default:
@@ -291,6 +293,55 @@ function cleanExpiredProposals() {
   return createResponse(true, `${deletedCount}件の期限切れ提案を削除しました`);
 }
 
+/**
+ * 全提案を取得（管理者用、期限切れ含む）
+ */
+function getAllProposals(e) {
+  const authToken = e.parameter.authToken;
+  const admin = verifyAuthToken(authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  const sheet = getOrCreateSheet();
+  const data = sheet.getDataRange().getValues();
+
+  if (data.length <= 1) {
+    return createResponse(true, "No proposals", { proposals: [] });
+  }
+
+  const now = new Date();
+  const proposals = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const expiryDate = new Date(row[7]);
+    const likeCount = row[8] || 0;
+    const status = row[10] || "掲載中";
+
+    proposals.push({
+      id: row[0],
+      title: row[1],
+      description: row[2],
+      category: row[3],
+      submitterName: row[4],
+      submitterEmail: row[5],
+      postedDate: row[6],
+      expiryDate: row[7],
+      likeCount: likeCount,
+      status: status,
+      daysRemaining: Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)),
+    });
+  }
+
+  proposals.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+
+  return createResponse(true, "Success", {
+    proposals: proposals,
+    totalEmployees: TOTAL_EMPLOYEES,
+  });
+}
+
 // ========== 管理者認証関数 ==========
 
 /**
@@ -379,6 +430,15 @@ function updateProposal(params) {
   if (params.description) sheet.getRange(row, 3).setValue(params.description);
   if (params.category) sheet.getRange(row, 4).setValue(params.category);
   if (params.status) sheet.getRange(row, 11).setValue(params.status);
+
+  // 期限延長オプション
+  if (params.extendDays && params.extendDays > 0) {
+    const newExpiryDate = new Date(
+      new Date().getTime() + params.extendDays * 24 * 60 * 60 * 1000
+    );
+    sheet.getRange(row, 8).setValue(newExpiryDate);
+    sheet.getRange(row, 8).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+  }
 
   sheet.getRange(row, 12).setValue(new Date());
   sheet.getRange(row, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss");
