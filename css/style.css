@@ -1857,8 +1857,15 @@ body {
 /* ========== 新ホームページ ========== */
 
 .home-page {
-    background: #0f172a;
+    background: #0f172a !important;
+    background-image: none !important;
     overflow-x: hidden;
+}
+
+.home-page .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
 /* ヒーローセクション */
