@@ -128,12 +128,14 @@ async function loadDashboardData() {
  * 統計情報を更新
  */
 function updateStats() {
+    const pending = allProposals.filter(p => p.status === '保留');
     const active = allProposals.filter(p => p.status === '掲載中');
     const candidates = allProposals.filter(p => p.status === '実施候補');
     const expired = allProposals.filter(p => p.status === '期限切れ');
     const totalLikes = allProposals.reduce((sum, p) => sum + (p.likeCount || 0), 0);
 
     document.getElementById('statTotal').textContent = allProposals.length;
+    document.getElementById('statPending').textContent = pending.length;
     document.getElementById('statActive').textContent = active.length;
     document.getElementById('statCandidate').textContent = candidates.length;
     document.getElementById('statTotalLikes').textContent = totalLikes;
@@ -472,6 +474,7 @@ async function handleCleanExpired() {
  */
 function getStatusClass(status) {
     switch (status) {
+        case '保留': return 'pending';
         case '掲載中': return 'active';
         case '実施候補': return 'candidate';
         case '期限切れ': return 'expired';

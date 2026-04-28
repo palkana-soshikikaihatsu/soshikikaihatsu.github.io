@@ -53,6 +53,13 @@
                             <div class="admin-stat-label">総提案数</div>
                         </div>
                     </div>
+                    <div class="admin-stat-card stat-pending">
+                        <div class="admin-stat-icon">🔶</div>
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-number" id="statPending">-</div>
+                            <div class="admin-stat-label">保留（要承認）</div>
+                        </div>
+                    </div>
                     <div class="admin-stat-card">
                         <div class="admin-stat-icon">🟢</div>
                         <div class="admin-stat-content">
@@ -107,6 +114,7 @@
                     <div class="admin-toolbar-actions">
                         <select id="statusFilter" class="filter-select">
                             <option value="">すべてのステータス</option>
+                            <option value="保留">保留（未承認）</option>
                             <option value="掲載中">掲載中</option>
                             <option value="実施候補">実施候補</option>
                             <option value="期限切れ">期限切れ</option>
@@ -228,6 +236,7 @@
                     <div class="form-group">
                         <label for="editStatus" class="form-label required">ステータス</label>
                         <select id="editStatus" class="form-select" required>
+                            <option value="保留">保留（未承認）</option>
                             <option value="掲載中">掲載中</option>
                             <option value="実施候補">実施候補</option>
                             <option value="期限切れ">期限切れ</option>

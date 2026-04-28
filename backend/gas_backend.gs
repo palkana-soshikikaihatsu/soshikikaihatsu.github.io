@@ -110,7 +110,7 @@ function addProposal(params) {
     expiryDate, // H: 期限日時（Dateオブジェクト）
     0, // I: いいね数
     "", // J: いいねユーザーリスト（カンマ区切り）
-    "掲載中", // K: ステータス（掲載中/実施候補/期限切れ）
+    "保留", // K: ステータス（保留/掲載中/実施候補/期限切れ）
     now, // L: 更新日時（Dateオブジェクト）
   ];
 
@@ -163,8 +163,8 @@ function getProposals() {
       sheet.getRange(i + 1, 11).setValue(status);
     }
 
-    // 期限切れ以外を返す
-    if (status !== "期限切れ") {
+    // 掲載中と実施候補のみ返す（保留・期限切れは除外）
+    if (status === "掲載中" || status === "実施候補") {
       proposals.push({
         id: row[0],
         title: row[1],

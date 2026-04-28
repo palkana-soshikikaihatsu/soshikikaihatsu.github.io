@@ -628,7 +628,17 @@ body {
 .success-message p {
     font-size: 1.1rem;
     color: var(--text-secondary);
-    margin-bottom: 30px;
+    margin-bottom: 15px;
+}
+
+.pending-notice {
+    background: rgba(251, 146, 60, 0.1);
+    border: 1px solid rgba(251, 146, 60, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    color: #ea580c;
+    font-size: 0.95rem !important;
+    margin-bottom: 25px !important;
 }
 
 .success-actions {
@@ -1600,6 +1610,11 @@ body {
     font-weight: 500;
 }
 
+.status-pending {
+    background: rgba(251, 146, 60, 0.2);
+    color: #ea580c;
+}
+
 .status-active {
     background: rgba(74, 222, 128, 0.2);
     color: #16a34a;
@@ -1613,6 +1628,10 @@ body {
 .status-expired {
     background: rgba(156, 163, 175, 0.2);
     color: #6b7280;
+}
+
+.stat-pending {
+    border-left: 4px solid #ea580c;
 }
 
 .danger-text {
