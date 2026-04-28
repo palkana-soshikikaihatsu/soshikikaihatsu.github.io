@@ -16,6 +16,7 @@ const ADMIN_SHEET_NAME = "管理者";
 const TOTAL_EMPLOYEES = 600; // 全従業員数
 const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
 const AUTH_TOKEN_EXPIRY_HOURS = 24; // 認証トークン有効期限（時間）
+const NOTIFICATION_EMAIL = "palkana-soshikikaihatsu@pal.or.jp"; // 新規投稿通知先メールアドレス
 
 // ========== メイン関数 ==========
 
@@ -121,6 +122,17 @@ function addProposal(params) {
   sheet.getRange(lastRow, 7).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 投稿日時
   sheet.getRange(lastRow, 8).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 期限日時
   sheet.getRange(lastRow, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 更新日時
+
+  // 新規投稿の通知メールを送信
+  sendNewProposalNotification({
+    proposalId: proposalId,
+    title: params.title || "",
+    description: params.description || "",
+    category: params.category || "",
+    submitterName: params.submitterName || "匿名",
+    submitterEmail: params.submitterEmail || "",
+    postedDate: now,
+  });
 
   return createResponse(true, "提案を投稿しました", {
     proposalId: proposalId,
@@ -542,6 +554,63 @@ function getOrCreateAdminSheet() {
   }
 
   return sheet;
+}
+
+// ========== メール通知関数 ==========
+
+/**
+ * 新規提案の通知メールを送信
+ */
+function sendNewProposalNotification(proposal) {
+  try {
+    const subject = `【いいね！パルプロジェクト】新規提案が投稿されました: ${proposal.title}`;
+    
+    const body = `
+いいね！パルプロジェクトに新しい提案が投稿されました。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 提案内容
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【タイトル】
+${proposal.title}
+
+【カテゴリ】
+${proposal.category}
+
+【提案者】
+${proposal.submitterName}（${proposal.submitterEmail}）
+
+【投稿日時】
+${Utilities.formatDate(proposal.postedDate, "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss")}
+
+【提案内容】
+${proposal.description}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+この提案は現在「保留」ステータスです。
+管理画面で内容を確認し、掲載するかどうかを判断してください。
+
+▼ 管理画面はこちら
+https://soshikikaihatsu.github.io/login.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは自動送信されています。
+いいね！パルプロジェクト | 組織開発課
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+    MailApp.sendEmail({
+      to: NOTIFICATION_EMAIL,
+      subject: subject,
+      body: body,
+    });
+
+    Logger.log("通知メールを送信しました: " + proposal.title);
+  } catch (error) {
+    Logger.log("メール送信エラー: " + error.toString());
+  }
 }
 
 // ========== ユーティリティ関数 ==========
