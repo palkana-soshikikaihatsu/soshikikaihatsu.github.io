@@ -2122,17 +2122,6 @@ body {
     position: relative;
 }
 
-.features::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 200px;
-    background: linear-gradient(to bottom, transparent, #0f172a);
-    pointer-events: none;
-}
-
 .section-header {
     text-align: center;
     margin-bottom: 60px;
