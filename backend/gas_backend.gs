@@ -563,6 +563,12 @@ function getOrCreateAdminSheet() {
  */
 function sendNewProposalNotification(proposal) {
   try {
+    // 引数チェック
+    if (!proposal || !proposal.title) {
+      Logger.log("メール送信スキップ: 提案データが不正です");
+      return;
+    }
+    
     const subject = `【いいね！パルプロジェクト】新規提案が投稿されました: ${proposal.title}`;
     
     const body = `
@@ -611,6 +617,22 @@ https://soshikikaihatsu.github.io/login.html
   } catch (error) {
     Logger.log("メール送信エラー: " + error.toString());
   }
+}
+
+/**
+ * メール送信テスト用関数（GASエディタから手動実行して権限を承認）
+ */
+function testSendEmail() {
+  sendNewProposalNotification({
+    proposalId: "TEST_001",
+    title: "テスト提案",
+    description: "これはテストメールです。正常に届いていれば、メール通知機能は正しく動作しています。",
+    category: "テスト",
+    submitterName: "テスト太郎",
+    submitterEmail: "test@example.com",
+    postedDate: new Date(),
+  });
+  Logger.log("テストメール送信完了");
 }
 
 // ========== ユーティリティ関数 ==========
