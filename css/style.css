@@ -1870,15 +1870,15 @@ body {
 
 /* ホームヘッダー */
 .home-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    padding: 15px 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+    padding: 20px 0;
+    background: transparent;
+}
+
+.home-header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .home-logo {
@@ -1890,15 +1890,21 @@ body {
     width: auto;
 }
 
+.home-header-copyright {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
 /* ヒーローセクション */
 .hero {
-    min-height: 100vh;
+    min-height: calc(100vh - 80px);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     position: relative;
-    padding: 100px 20px 40px;
+    padding: 40px 20px;
     overflow: hidden;
 }
 
