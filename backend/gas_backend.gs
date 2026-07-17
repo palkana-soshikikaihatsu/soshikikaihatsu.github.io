@@ -7,6 +7,14 @@
  * 3. このスクリプトをGASエディタに貼り付け
  * 4. Webアプリとしてデプロイ（アクセス: 全員）
  * 5. デプロイURLをフロントエンドに設定
+ *
+ * メール通知の設定（重要）:
+ * 1. NOTIFICATION_EMAIL に通知先を設定
+ * 2. GASエディタで authorizeMailPermissions → testSendEmail の順に実行し、メール送信権限を承認
+ * 3. Webアプリデプロイ時は必ず「次のユーザーとして実行: 自分」を選択
+ *    （「アクセスしているユーザー」だと匿名投稿者に権限がなくメールが送れません）
+ * 4. コード変更後は「新しいデプロイ」で再デプロイすること（管理画面の編集だけでは反映されません）
+ * 5. 送信結果はスプレッドシートの「メールログ」シートにも記録されます
  */
 
 // ========== 設定 ==========
@@ -16,7 +24,8 @@ const ADMIN_SHEET_NAME = "管理者";
 const TOTAL_EMPLOYEES = 600; // 全従業員数
 const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
 const AUTH_TOKEN_EXPIRY_HOURS = 24; // 認証トークン有効期限（時間）
-const NOTIFICATION_EMAIL = "palkana-soshikikaihatsu@pal.or.jp"; // 新規投稿通知先メールアドレス
+const NOTIFICATION_EMAIL = "palkana-soshikikaihatsu@pal.or.jp"; // 新規投稿通知先（複数はカンマ区切り）
+const MAIL_LOG_SHEET_NAME = "メールログ";
 
 // ========== メイン関数 ==========
 
@@ -124,7 +133,7 @@ function addProposal(params) {
   sheet.getRange(lastRow, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 更新日時
 
   // 新規投稿の通知メールを送信
-  sendNewProposalNotification({
+  const emailResult = sendNewProposalNotification({
     proposalId: proposalId,
     title: params.title || "",
     description: params.description || "",
@@ -137,6 +146,7 @@ function addProposal(params) {
   return createResponse(true, "提案を投稿しました", {
     proposalId: proposalId,
     expiryDate: expiryDate.toISOString(),
+    emailNotification: emailResult,
   });
 }
 
@@ -559,80 +569,188 @@ function getOrCreateAdminSheet() {
 // ========== メール通知関数 ==========
 
 /**
- * 新規提案の通知メールを送信
+ * 通知先メールアドレスを取得（カンマ区切り対応）
  */
-function sendNewProposalNotification(proposal) {
-  try {
-    // 引数チェック
-    if (!proposal || !proposal.title) {
-      Logger.log("メール送信スキップ: 提案データが不正です");
-      return;
-    }
-    
-    const subject = `【いいね！パルプロジェクト】新規提案が投稿されました: ${proposal.title}`;
-    
-    const body = `
-いいね！パルプロジェクトに新しい提案が投稿されました。
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ 提案内容
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-【タイトル】
-${proposal.title}
-
-【カテゴリ】
-${proposal.category}
-
-【提案者】
-${proposal.submitterName}（${proposal.submitterEmail}）
-
-【投稿日時】
-${Utilities.formatDate(proposal.postedDate, "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss")}
-
-【提案内容】
-${proposal.description}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-この提案は現在「保留」ステータスです。
-管理画面で内容を確認し、掲載するかどうかを判断してください。
-
-▼ 管理画面はこちら
-https://soshikikaihatsu.github.io/login.html
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-このメールは自動送信されています。
-いいね！パルプロジェクト | 組織開発課
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`;
-
-    MailApp.sendEmail({
-      to: NOTIFICATION_EMAIL,
-      subject: subject,
-      body: body,
+function getNotificationRecipients() {
+  if (!NOTIFICATION_EMAIL || NOTIFICATION_EMAIL.trim() === "") {
+    return [];
+  }
+  return NOTIFICATION_EMAIL.split(",")
+    .map(function (email) {
+      return email.trim();
+    })
+    .filter(function (email) {
+      return email !== "";
     });
+}
 
-    Logger.log("通知メールを送信しました: " + proposal.title);
+/**
+ * メール送信結果をスプレッドシートに記録
+ */
+function logMailEvent(status, message, proposalTitle) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(MAIL_LOG_SHEET_NAME);
+
+    if (!sheet) {
+      sheet = ss.insertSheet(MAIL_LOG_SHEET_NAME);
+      sheet.appendRow(["日時", "ステータス", "提案タイトル", "詳細"]);
+      const headerRange = sheet.getRange(1, 1, 1, 4);
+      headerRange.setFontWeight("bold");
+      headerRange.setBackground("#4285f4");
+      headerRange.setFontColor("#ffffff");
+    }
+
+    sheet.appendRow([new Date(), status, proposalTitle || "", message]);
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 1).setNumberFormat("yyyy/mm/dd hh:mm:ss");
   } catch (error) {
-    Logger.log("メール送信エラー: " + error.toString());
+    Logger.log("メールログ記録エラー: " + error.toString());
   }
 }
 
 /**
- * メール送信テスト用関数（GASエディタから手動実行して権限を承認）
+ * 新規提案の通知メールを送信
+ * @returns {{sent: boolean, error?: string, recipients?: string[]}}
+ */
+function sendNewProposalNotification(proposal) {
+  if (!proposal || !proposal.title) {
+    const errorMessage = "提案データが不正です（タイトルなし）";
+    Logger.log("メール送信スキップ: " + errorMessage);
+    logMailEvent("SKIP", errorMessage, "");
+    return { sent: false, error: errorMessage };
+  }
+
+  const recipients = getNotificationRecipients();
+  if (recipients.length === 0) {
+    const errorMessage = "NOTIFICATION_EMAIL が未設定です";
+    Logger.log("メール送信スキップ: " + errorMessage);
+    logMailEvent("ERROR", errorMessage, proposal.title);
+    return { sent: false, error: errorMessage };
+  }
+
+  try {
+    const subject =
+      "【いいね！パルプロジェクト】新規提案が投稿されました: " + proposal.title;
+
+    const body =
+      "いいね！パルプロジェクトに新しい提案が投稿されました。\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "■ 提案内容\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "【タイトル】\n" +
+      proposal.title +
+      "\n\n" +
+      "【カテゴリ】\n" +
+      proposal.category +
+      "\n\n" +
+      "【提案者】\n" +
+      proposal.submitterName +
+      "（" +
+      proposal.submitterEmail +
+      "）\n\n" +
+      "【投稿日時】\n" +
+      Utilities.formatDate(proposal.postedDate, "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss") +
+      "\n\n" +
+      "【提案内容】\n" +
+      proposal.description +
+      "\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "この提案は現在「保留」ステータスです。\n" +
+      "管理画面で内容を確認し、掲載するかどうかを判断してください。\n\n" +
+      "▼ 管理画面はこちら\n" +
+      "https://soshikikaihatsu.github.io/login.html\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "このメールは自動送信されています。\n" +
+      "いいね！パルプロジェクト | 組織開発課\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+    MailApp.sendEmail({
+      to: recipients.join(","),
+      subject: subject,
+      body: body,
+      name: "いいね！パルプロジェクト",
+    });
+
+    const successMessage = "送信成功 → " + recipients.join(",");
+    Logger.log("通知メールを送信しました: " + proposal.title);
+    logMailEvent("SUCCESS", successMessage, proposal.title);
+    return { sent: true, recipients: recipients };
+  } catch (error) {
+    const errorMessage = error.toString();
+    Logger.log("メール送信エラー: " + errorMessage);
+    logMailEvent("ERROR", errorMessage, proposal.title);
+    return { sent: false, error: errorMessage };
+  }
+}
+
+/**
+ * メール設定の診断（GASエディタから手動実行）
+ */
+function checkMailSetup() {
+  const recipients = getNotificationRecipients();
+  Logger.log("=== メール通知 診断 ===");
+  Logger.log("通知先: " + (recipients.length ? recipients.join(", ") : "未設定"));
+  Logger.log("スクリプト実行者: " + Session.getActiveUser().getEmail());
+
+  try {
+    Logger.log("残り送信可能数: " + MailApp.getRemainingDailyQuota());
+    Logger.log("✅ メール送信権限: 承認済み");
+  } catch (error) {
+    Logger.log("❌ メール送信権限: 未承認");
+    Logger.log("   → authorizeMailPermissions を実行して権限を承認してください");
+  }
+
+  if (recipients.length === 0) {
+    Logger.log("❌ NOTIFICATION_EMAIL を設定してください");
+    return;
+  }
+
+  Logger.log("次のステップ: authorizeMailPermissions → testSendEmail の順に実行");
+}
+
+/**
+ * メール送信権限の承認（GASエディタから最初に実行）
+ * 実行時に権限承認ダイアログが表示されます。「許可」をクリックしてください。
+ */
+function authorizeMailPermissions() {
+  const recipients = getNotificationRecipients();
+  if (recipients.length === 0) {
+    throw new Error("NOTIFICATION_EMAIL を設定してください");
+  }
+
+  MailApp.sendEmail({
+    to: recipients[0],
+    subject: "【権限確認】いいね！パルプロジェクト メール送信テスト",
+    body:
+      "このメールは GAS のメール送信権限確認用です。\n\n" +
+      "authorizeMailPermissions 関数の実行に成功しています。\n" +
+      "続けて testSendEmail を実行して本番形式のテスト送信を確認してください。",
+    name: "いいね！パルプロジェクト",
+  });
+
+  Logger.log("✅ メール送信権限の承認とテスト送信が完了しました");
+}
+
+/**
+ * メール送信テスト用関数（authorizeMailPermissions 実行後に実行）
  */
 function testSendEmail() {
-  sendNewProposalNotification({
+  const result = sendNewProposalNotification({
     proposalId: "TEST_001",
     title: "テスト提案",
-    description: "これはテストメールです。正常に届いていれば、メール通知機能は正しく動作しています。",
+    description:
+      "これはテストメールです。正常に届いていれば、メール通知機能は正しく動作しています。",
     category: "テスト",
     submitterName: "テスト太郎",
     submitterEmail: "test@example.com",
     postedDate: new Date(),
   });
-  Logger.log("テストメール送信完了");
+
+  Logger.log("テストメール結果: " + JSON.stringify(result));
+  if (!result.sent) {
+    throw new Error("テストメール送信失敗: " + (result.error || "不明なエラー"));
+  }
 }
 
 // ========== ユーティリティ関数 ==========
