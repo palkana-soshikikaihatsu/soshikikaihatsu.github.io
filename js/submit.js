@@ -71,6 +71,9 @@ form.addEventListener('submit', async (e) => {
         
         // APIに送信
         const result = await addProposal(formData);
+        if (result.emailNotification) {
+            console.log('📧 メール通知結果:', result.emailNotification);
+        }
         
         // ユーザー情報を保存
         saveUserInfo(formData.submitterEmail, formData.submitterName);

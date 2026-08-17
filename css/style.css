@@ -722,6 +722,8 @@ body {
     background: var(--card-bg);
     border-radius: 8px;
     box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .summary-item {
@@ -739,6 +741,16 @@ body {
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--primary-color);
+}
+
+.summary-link {
+    color: var(--primary-dark);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.summary-link:hover {
+    text-decoration: underline;
 }
 
 /* ========== 提案リスト ========== */
@@ -2610,5 +2622,206 @@ body {
     .home-nav-link {
         padding: 8px 14px;
         font-size: 0.9rem;
+    }
+}
+
+/* ========== 進捗報告ページ ========== */
+.progress-intro {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+.progress-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.progress-filter-btn {
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.progress-filter-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+.progress-filter-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+
+.progress-list {
+    display: grid;
+    gap: 20px;
+}
+
+.progress-card,
+.progress-admin-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+}
+
+.progress-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.progress-department {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.progress-meter {
+    margin: 18px 0;
+}
+
+.progress-meter .progress-bar {
+    background: #e7e5e4;
+    box-shadow: none;
+}
+
+.progress-latest {
+    background: #f8faf8;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+}
+
+.progress-latest-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.progress-latest p,
+.progress-admin-reports p {
+    color: var(--text-primary);
+    white-space: pre-wrap;
+}
+
+.progress-latest-empty {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 12px 0 4px;
+}
+
+.progress-toggle {
+    margin-top: 4px;
+}
+
+.progress-timeline,
+.progress-admin-reports {
+    list-style: none;
+    margin-top: 16px;
+    padding: 0;
+    border-left: 3px solid #bbf7d0;
+}
+
+.progress-timeline li,
+.progress-admin-reports li {
+    position: relative;
+    padding: 0 0 18px 20px;
+}
+
+.progress-timeline li::before,
+.progress-admin-reports li::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 6px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--primary-dark);
+}
+
+.progress-timeline-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.badge-in-progress {
+    background: var(--gradient-secondary);
+    color: white;
+}
+
+.badge-complete {
+    background: var(--gradient-success);
+    color: white;
+}
+
+.status-in-progress {
+    background: rgba(251, 146, 60, 0.2);
+    color: #c2410c;
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: #047857;
+}
+
+.progress-admin-help {
+    color: var(--text-secondary);
+    margin: -10px 0 24px;
+}
+
+.progress-admin-list {
+    display: grid;
+    gap: 20px;
+}
+
+.progress-admin-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+}
+
+.progress-range {
+    width: 100%;
+    margin-bottom: 10px;
+    accent-color: var(--primary-dark);
+}
+
+.hero-stats {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .progress-card,
+    .progress-admin-card {
+        padding: 20px;
+    }
+
+    .progress-card-header {
+        flex-direction: column;
     }
 }

@@ -24,6 +24,7 @@
                     <a href="index.html" class="home-nav-link active">ホーム</a>
                     <a href="submit.html" class="home-nav-link">提案投稿</a>
                     <a href="proposals.html" class="home-nav-link">提案一覧</a>
+                    <a href="progress.html" class="home-nav-link">進捗報告</a>
                     <a href="login.html" class="home-nav-link">管理者</a>
                 </nav>
             </div>
@@ -70,6 +71,13 @@
                     </svg>
                     提案一覧を見る
                 </a>
+                <a href="progress.html" class="btn btn-hero-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    進捗報告を見る
+                </a>
             </div>
             <div class="hero-stats">
                 <div class="hero-stat">
@@ -80,6 +88,11 @@
                 <div class="hero-stat">
                     <span class="hero-stat-number" id="candidateProposals">-</span>
                     <span class="hero-stat-label">実施候補</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-number" id="inProgressProposals">-</span>
+                    <span class="hero-stat-label">実施中</span>
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
@@ -152,7 +165,7 @@
                         </svg>
                     </div>
                     <h3>実施候補</h3>
-                    <p>100票を獲得すると実施候補に。関連部署と連携して提案者とともに実現に向けて動きます。</p>
+                    <p>100票を獲得すると実施候補に。関連部署と連携して提案者とともに実現に向けて動き、進捗は公開ページで確認できます。</p>
                 </div>
             </div>
         </div>
@@ -220,7 +233,7 @@
                             </svg>
                         </div>
                         <h3>実施へ</h3>
-                        <p>100票を獲得した提案は、関連部署と連携し実施に向けて動きます。提案者も実現に向けて主体性をもち関わります。</p>
+                        <p>100票を獲得した提案は、関連部署と連携し実施に向けて動きます。提案者も実現に向けて主体性をもち関わります。進み具合は「進捗報告」ページで確認できます。</p>
                     </div>
                 </div>
             </div>
@@ -257,6 +270,7 @@
                     <a href="index.html">ホーム</a>
                     <a href="submit.html">提案投稿</a>
                     <a href="proposals.html">提案一覧</a>
+                    <a href="progress.html">進捗報告</a>
                     <a href="login.html">管理者</a>
                 </div>
             </div>
@@ -284,6 +298,14 @@
                 console.error('統計情報の取得に失敗:', error);
                 document.getElementById('totalProposals').textContent = '0';
                 document.getElementById('candidateProposals').textContent = '0';
+            }
+
+            try {
+                const progressData = await getProgressReports();
+                document.getElementById('inProgressProposals').textContent = progressData.inProgressCount || 0;
+            } catch (error) {
+                console.error('進捗情報の取得に失敗:', error);
+                document.getElementById('inProgressProposals').textContent = '0';
             }
 
             // スクロールアニメーション

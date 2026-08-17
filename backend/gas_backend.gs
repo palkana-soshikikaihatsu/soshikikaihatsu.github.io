@@ -7,16 +7,26 @@
  * 3. このスクリプトをGASエディタに貼り付け
  * 4. Webアプリとしてデプロイ（アクセス: 全員）
  * 5. デプロイURLをフロントエンドに設定
+ *
+ * メール通知の設定（重要）:
+ * 1. NOTIFICATION_EMAIL に通知先を設定
+ * 2. GASエディタで authorizeMailPermissions → testSendEmail の順に実行し、メール送信権限を承認
+ * 3. Webアプリデプロイ時は必ず「次のユーザーとして実行: 自分」を選択
+ *    （「アクセスしているユーザー」だと匿名投稿者に権限がなくメールが送れません）
+ * 4. コード変更後は「新しいデプロイ」で再デプロイすること（管理画面の編集だけでは反映されません）
+ * 5. 送信結果はスプレッドシートの「メールログ」シートにも記録されます
  */
 
 // ========== 設定 ==========
 const SPREADSHEET_ID = "1_JbzctKYfqSLwPJ-7aBajENreTJFCjk_Q-J4KQThDzY"; // スプレッドシートIDを設定
 const PROPOSAL_SHEET_NAME = "提案一覧";
 const ADMIN_SHEET_NAME = "管理者";
+const PROGRESS_SHEET_NAME = "進捗報告";
 const TOTAL_EMPLOYEES = 600; // 全従業員数
 const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
 const AUTH_TOKEN_EXPIRY_HOURS = 24; // 認証トークン有効期限（時間）
-const NOTIFICATION_EMAIL = "palkana-soshikikaihatsu@pal.or.jp"; // 新規投稿通知先メールアドレス
+const NOTIFICATION_EMAIL = "palkana-soshikikaihatsu@pal.or.jp"; // 新規投稿通知先（複数はカンマ区切り）
+const MAIL_LOG_SHEET_NAME = "メールログ";
 
 // ========== メイン関数 ==========
 
@@ -50,6 +60,10 @@ function doPost(e) {
         return changePassword(params);
       case "cleanExpired":
         return cleanExpiredWithAuth(params);
+      case "addProgressReport":
+        return addProgressReport(params);
+      case "deleteProgressReport":
+        return deleteProgressReport(params);
       default:
         return createResponse(false, "Unknown action");
     }
@@ -78,6 +92,8 @@ function doGet(e) {
         return getAllProposals(e);
       case "cleanExpired":
         return cleanExpiredProposals();
+      case "getProgressReports":
+        return getProgressReports();
       default:
         return createResponse(false, "Unknown action");
     }
@@ -111,7 +127,7 @@ function addProposal(params) {
     expiryDate, // H: 期限日時（Dateオブジェクト）
     0, // I: いいね数
     "", // J: いいねユーザーリスト（カンマ区切り）
-    "保留", // K: ステータス（保留/掲載中/実施候補/期限切れ）
+    "保留", // K: ステータス（保留/掲載中/実施候補/実施中/完了/期限切れ）
     now, // L: 更新日時（Dateオブジェクト）
   ];
 
@@ -124,7 +140,7 @@ function addProposal(params) {
   sheet.getRange(lastRow, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss"); // 更新日時
 
   // 新規投稿の通知メールを送信
-  sendNewProposalNotification({
+  const emailResult = sendNewProposalNotification({
     proposalId: proposalId,
     title: params.title || "",
     description: params.description || "",
@@ -137,6 +153,7 @@ function addProposal(params) {
   return createResponse(true, "提案を投稿しました", {
     proposalId: proposalId,
     expiryDate: expiryDate.toISOString(),
+    emailNotification: emailResult,
   });
 }
 
@@ -294,9 +311,12 @@ function cleanExpiredProposals() {
   let deletedCount = 0;
 
   // 下から上に削除（行番号のズレを防ぐ）
+  // 実施候補・実施中・完了は期限切れでも削除しない
+  const keepStatuses = ["実施候補", "実施中", "完了"];
   for (let i = data.length - 1; i >= 1; i--) {
     const expiryDate = new Date(data[i][7]);
-    if (now > expiryDate) {
+    const status = data[i][10] || "";
+    if (now > expiryDate && keepStatuses.indexOf(status) === -1) {
       sheet.deleteRow(i + 1);
       deletedCount++;
     }
@@ -556,83 +576,418 @@ function getOrCreateAdminSheet() {
   return sheet;
 }
 
+// ========== 進捗報告関数 ==========
+
+/**
+ * 進捗報告シートを取得または作成
+ */
+function getOrCreateProgressSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(PROGRESS_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(PROGRESS_SHEET_NAME);
+    sheet.appendRow([
+      "報告ID",
+      "提案ID",
+      "報告日時",
+      "進捗率",
+      "報告内容",
+      "担当部署",
+      "報告者名",
+    ]);
+
+    const headerRange = sheet.getRange(1, 1, 1, 7);
+    headerRange.setFontWeight("bold");
+    headerRange.setBackground("#4285f4");
+    headerRange.setFontColor("#ffffff");
+  }
+
+  return sheet;
+}
+
+/**
+ * 実施中・完了・実施候補の進捗を公開用に取得
+ */
+function getProgressReports() {
+  const proposalSheet = getOrCreateSheet();
+  const proposalData = proposalSheet.getDataRange().getValues();
+  const progressSheet = getOrCreateProgressSheet();
+  const progressData = progressSheet.getDataRange().getValues();
+
+  const reportsByProposal = {};
+  for (let i = 1; i < progressData.length; i++) {
+    const row = progressData[i];
+    const proposalId = row[1];
+    if (!proposalId) continue;
+
+    const report = {
+      id: row[0],
+      proposalId: proposalId,
+      reportedAt: row[2],
+      progressPercent: Number(row[3]) || 0,
+      content: row[4] || "",
+      department: row[5] || "",
+      reporterName: row[6] || "",
+    };
+
+    if (!reportsByProposal[proposalId]) {
+      reportsByProposal[proposalId] = [];
+    }
+    reportsByProposal[proposalId].push(report);
+  }
+
+  Object.keys(reportsByProposal).forEach(function (proposalId) {
+    reportsByProposal[proposalId].sort(function (a, b) {
+      return new Date(b.reportedAt) - new Date(a.reportedAt);
+    });
+  });
+
+  const items = [];
+  const targetStatuses = ["実施候補", "実施中", "完了"];
+
+  for (let i = 1; i < proposalData.length; i++) {
+    const row = proposalData[i];
+    const status = row[10] || "";
+    if (targetStatuses.indexOf(status) === -1) continue;
+
+    const proposalId = row[0];
+    const reports = reportsByProposal[proposalId] || [];
+    const latest = reports.length > 0 ? reports[0] : null;
+
+    items.push({
+      id: proposalId,
+      title: row[1],
+      description: row[2],
+      category: row[3],
+      submitterName: row[4],
+      postedDate: row[6],
+      likeCount: row[8] || 0,
+      status: status,
+      progressPercent: latest ? latest.progressPercent : status === "完了" ? 100 : 0,
+      department: latest ? latest.department : "",
+      latestReport: latest,
+      reports: reports,
+    });
+  }
+
+  const statusOrder = { 実施中: 0, 実施候補: 1, 完了: 2 };
+  items.sort(function (a, b) {
+    const orderDiff = (statusOrder[a.status] || 9) - (statusOrder[b.status] || 9);
+    if (orderDiff !== 0) return orderDiff;
+    const aDate = a.latestReport ? new Date(a.latestReport.reportedAt) : new Date(a.postedDate);
+    const bDate = b.latestReport ? new Date(b.latestReport.reportedAt) : new Date(b.postedDate);
+    return bDate - aDate;
+  });
+
+  return createResponse(true, "Success", {
+    items: items,
+    inProgressCount: items.filter(function (item) {
+      return item.status === "実施中";
+    }).length,
+    candidateCount: items.filter(function (item) {
+      return item.status === "実施候補";
+    }).length,
+    completedCount: items.filter(function (item) {
+      return item.status === "完了";
+    }).length,
+  });
+}
+
+/**
+ * 進捗報告を追加（管理者用）
+ */
+function addProgressReport(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  const proposalId = params.proposalId;
+  if (!proposalId) {
+    return createResponse(false, "proposalIdが必要です");
+  }
+
+  const proposalSheet = getOrCreateSheet();
+  const row = findProposalRow(proposalSheet, proposalId);
+  if (!row) {
+    return createResponse(false, "提案が見つかりません");
+  }
+
+  const content = (params.content || "").toString().trim();
+  if (!content) {
+    return createResponse(false, "報告内容を入力してください");
+  }
+
+  let progressPercent = Number(params.progressPercent);
+  if (isNaN(progressPercent)) progressPercent = 0;
+  progressPercent = Math.max(0, Math.min(100, Math.round(progressPercent)));
+
+  const currentStatus = proposalSheet.getRange(row, 11).getValue() || "";
+  let nextStatus = params.status || currentStatus;
+  if (!params.status) {
+    if (currentStatus === "実施候補") {
+      nextStatus = "実施中";
+    } else if (progressPercent >= 100 && currentStatus === "実施中") {
+      nextStatus = "完了";
+    }
+  }
+
+  if (nextStatus === "完了") {
+    progressPercent = 100;
+  }
+
+  const reportId = generateProgressReportId();
+  const now = new Date();
+  const progressSheet = getOrCreateProgressSheet();
+  progressSheet.appendRow([
+    reportId,
+    proposalId,
+    now,
+    progressPercent,
+    content,
+    params.department || "",
+    admin.adminName || "管理者",
+  ]);
+
+  const lastRow = progressSheet.getLastRow();
+  progressSheet.getRange(lastRow, 3).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+
+  proposalSheet.getRange(row, 11).setValue(nextStatus);
+  proposalSheet.getRange(row, 12).setValue(now);
+  proposalSheet.getRange(row, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+
+  return createResponse(true, "進捗報告を追加しました", {
+    reportId: reportId,
+    status: nextStatus,
+    progressPercent: progressPercent,
+  });
+}
+
+/**
+ * 進捗報告を削除（管理者用）
+ */
+function deleteProgressReport(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "認証が必要です");
+  }
+
+  const reportId = params.reportId;
+  if (!reportId) {
+    return createResponse(false, "reportIdが必要です");
+  }
+
+  const sheet = getOrCreateProgressSheet();
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === reportId) {
+      sheet.deleteRow(i + 1);
+      return createResponse(true, "進捗報告を削除しました");
+    }
+  }
+
+  return createResponse(false, "報告が見つかりません");
+}
+
+/**
+ * 進捗報告IDを生成
+ */
+function generateProgressReportId() {
+  return (
+    "PROG_" +
+    new Date().getTime() +
+    "_" +
+    Math.random().toString(36).substr(2, 9)
+  );
+}
+
 // ========== メール通知関数 ==========
 
 /**
- * 新規提案の通知メールを送信
+ * 通知先メールアドレスを取得（カンマ区切り対応）
  */
-function sendNewProposalNotification(proposal) {
-  try {
-    // 引数チェック
-    if (!proposal || !proposal.title) {
-      Logger.log("メール送信スキップ: 提案データが不正です");
-      return;
-    }
-    
-    const subject = `【いいね！パルプロジェクト】新規提案が投稿されました: ${proposal.title}`;
-    
-    const body = `
-いいね！パルプロジェクトに新しい提案が投稿されました。
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ 提案内容
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-【タイトル】
-${proposal.title}
-
-【カテゴリ】
-${proposal.category}
-
-【提案者】
-${proposal.submitterName}（${proposal.submitterEmail}）
-
-【投稿日時】
-${Utilities.formatDate(proposal.postedDate, "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss")}
-
-【提案内容】
-${proposal.description}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-この提案は現在「保留」ステータスです。
-管理画面で内容を確認し、掲載するかどうかを判断してください。
-
-▼ 管理画面はこちら
-https://soshikikaihatsu.github.io/login.html
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-このメールは自動送信されています。
-いいね！パルプロジェクト | 組織開発課
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`;
-
-    MailApp.sendEmail({
-      to: NOTIFICATION_EMAIL,
-      subject: subject,
-      body: body,
+function getNotificationRecipients() {
+  if (!NOTIFICATION_EMAIL || NOTIFICATION_EMAIL.trim() === "") {
+    return [];
+  }
+  return NOTIFICATION_EMAIL.split(",")
+    .map(function (email) {
+      return email.trim();
+    })
+    .filter(function (email) {
+      return email !== "";
     });
+}
 
-    Logger.log("通知メールを送信しました: " + proposal.title);
+/**
+ * メール送信結果をスプレッドシートに記録
+ */
+function logMailEvent(status, message, proposalTitle) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(MAIL_LOG_SHEET_NAME);
+
+    if (!sheet) {
+      sheet = ss.insertSheet(MAIL_LOG_SHEET_NAME);
+      sheet.appendRow(["日時", "ステータス", "提案タイトル", "詳細"]);
+      const headerRange = sheet.getRange(1, 1, 1, 4);
+      headerRange.setFontWeight("bold");
+      headerRange.setBackground("#4285f4");
+      headerRange.setFontColor("#ffffff");
+    }
+
+    sheet.appendRow([new Date(), status, proposalTitle || "", message]);
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 1).setNumberFormat("yyyy/mm/dd hh:mm:ss");
   } catch (error) {
-    Logger.log("メール送信エラー: " + error.toString());
+    Logger.log("メールログ記録エラー: " + error.toString());
   }
 }
 
 /**
- * メール送信テスト用関数（GASエディタから手動実行して権限を承認）
+ * 新規提案の通知メールを送信
+ * @returns {{sent: boolean, error?: string, recipients?: string[]}}
+ */
+function sendNewProposalNotification(proposal) {
+  if (!proposal || !proposal.title) {
+    const errorMessage = "提案データが不正です（タイトルなし）";
+    Logger.log("メール送信スキップ: " + errorMessage);
+    logMailEvent("SKIP", errorMessage, "");
+    return { sent: false, error: errorMessage };
+  }
+
+  const recipients = getNotificationRecipients();
+  if (recipients.length === 0) {
+    const errorMessage = "NOTIFICATION_EMAIL が未設定です";
+    Logger.log("メール送信スキップ: " + errorMessage);
+    logMailEvent("ERROR", errorMessage, proposal.title);
+    return { sent: false, error: errorMessage };
+  }
+
+  try {
+    const subject =
+      "【いいね！パルプロジェクト】新規提案が投稿されました: " + proposal.title;
+
+    const body =
+      "いいね！パルプロジェクトに新しい提案が投稿されました。\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "■ 提案内容\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "【タイトル】\n" +
+      proposal.title +
+      "\n\n" +
+      "【カテゴリ】\n" +
+      proposal.category +
+      "\n\n" +
+      "【提案者】\n" +
+      proposal.submitterName +
+      "（" +
+      proposal.submitterEmail +
+      "）\n\n" +
+      "【投稿日時】\n" +
+      Utilities.formatDate(proposal.postedDate, "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss") +
+      "\n\n" +
+      "【提案内容】\n" +
+      proposal.description +
+      "\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "この提案は現在「保留」ステータスです。\n" +
+      "管理画面で内容を確認し、掲載するかどうかを判断してください。\n\n" +
+      "▼ 管理画面はこちら\n" +
+      "https://soshikikaihatsu.github.io/login.html\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "このメールは自動送信されています。\n" +
+      "いいね！パルプロジェクト | 組織開発課\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+    MailApp.sendEmail({
+      to: recipients.join(","),
+      subject: subject,
+      body: body,
+      name: "いいね！パルプロジェクト",
+    });
+
+    const successMessage = "送信成功 → " + recipients.join(",");
+    Logger.log("通知メールを送信しました: " + proposal.title);
+    logMailEvent("SUCCESS", successMessage, proposal.title);
+    return { sent: true, recipients: recipients };
+  } catch (error) {
+    const errorMessage = error.toString();
+    Logger.log("メール送信エラー: " + errorMessage);
+    logMailEvent("ERROR", errorMessage, proposal.title);
+    return { sent: false, error: errorMessage };
+  }
+}
+
+/**
+ * メール設定の診断（GASエディタから手動実行）
+ */
+function checkMailSetup() {
+  const recipients = getNotificationRecipients();
+  Logger.log("=== メール通知 診断 ===");
+  Logger.log("通知先: " + (recipients.length ? recipients.join(", ") : "未設定"));
+  Logger.log("スクリプト実行者: " + Session.getActiveUser().getEmail());
+
+  try {
+    Logger.log("残り送信可能数: " + MailApp.getRemainingDailyQuota());
+    Logger.log("✅ メール送信権限: 承認済み");
+  } catch (error) {
+    Logger.log("❌ メール送信権限: 未承認");
+    Logger.log("   → authorizeMailPermissions を実行して権限を承認してください");
+  }
+
+  if (recipients.length === 0) {
+    Logger.log("❌ NOTIFICATION_EMAIL を設定してください");
+    return;
+  }
+
+  Logger.log("次のステップ: authorizeMailPermissions → testSendEmail の順に実行");
+}
+
+/**
+ * メール送信権限の承認（GASエディタから最初に実行）
+ * 実行時に権限承認ダイアログが表示されます。「許可」をクリックしてください。
+ */
+function authorizeMailPermissions() {
+  const recipients = getNotificationRecipients();
+  if (recipients.length === 0) {
+    throw new Error("NOTIFICATION_EMAIL を設定してください");
+  }
+
+  MailApp.sendEmail({
+    to: recipients[0],
+    subject: "【権限確認】いいね！パルプロジェクト メール送信テスト",
+    body:
+      "このメールは GAS のメール送信権限確認用です。\n\n" +
+      "authorizeMailPermissions 関数の実行に成功しています。\n" +
+      "続けて testSendEmail を実行して本番形式のテスト送信を確認してください。",
+    name: "いいね！パルプロジェクト",
+  });
+
+  Logger.log("✅ メール送信権限の承認とテスト送信が完了しました");
+}
+
+/**
+ * メール送信テスト用関数（authorizeMailPermissions 実行後に実行）
  */
 function testSendEmail() {
-  sendNewProposalNotification({
+  const result = sendNewProposalNotification({
     proposalId: "TEST_001",
     title: "テスト提案",
-    description: "これはテストメールです。正常に届いていれば、メール通知機能は正しく動作しています。",
+    description:
+      "これはテストメールです。正常に届いていれば、メール通知機能は正しく動作しています。",
     category: "テスト",
     submitterName: "テスト太郎",
     submitterEmail: "test@example.com",
     postedDate: new Date(),
   });
-  Logger.log("テストメール送信完了");
+
+  Logger.log("テストメール結果: " + JSON.stringify(result));
+  if (!result.sent) {
+    throw new Error("テストメール送信失敗: " + (result.error || "不明なエラー"));
+  }
 }
 
 // ========== ユーティリティ関数 ==========
