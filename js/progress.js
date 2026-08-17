@@ -33,8 +33,20 @@ async function loadProgressItems() {
     emptyState.style.display = 'none';
 
     try {
-        const data = await getProgressReports();
-        allProgressItems = data.items || [];
+        const [data, proposalData] = await Promise.all([
+            getProgressReports(),
+            getProposals().catch(() => ({ proposals: [], pastProposals: [] }))
+        ]);
+        const fullDescriptions = {};
+        [...(proposalData.proposals || []), ...(proposalData.pastProposals || [])].forEach(proposal => {
+            if (proposal.id && proposal.description) {
+                fullDescriptions[proposal.id] = proposal.description;
+            }
+        });
+        allProgressItems = (data.items || []).map(item => ({
+            ...item,
+            description: longerText(fullDescriptions[item.id], item.description)
+        }));
 
         document.getElementById('inProgressCount').textContent = data.inProgressCount || 0;
         document.getElementById('candidateCount').textContent = data.candidateCount || 0;
@@ -116,7 +128,10 @@ function createProgressCard(item) {
             </div>
 
             <h3 class="proposal-title">${escapeHtml(item.title)}</h3>
-            <p class="proposal-description progress-description">${escapeHtml(item.description || '')}</p>
+            <div class="progress-proposal-body">
+                <h4 class="progress-proposal-label">提案内容</h4>
+                <p class="progress-description">${escapeHtml(item.description || '')}</p>
+            </div>
 
             <div class="progress-meter">
                 <div class="progress-bar ${percent >= 100 ? 'complete' : ''}">
@@ -198,6 +213,12 @@ function formatDate(value) {
         month: 'short',
         day: 'numeric'
     });
+}
+
+function longerText(a, b) {
+    const left = a || '';
+    const right = b || '';
+    return right.length > left.length ? right : left;
 }
 
 function escapeHtml(text) {
