@@ -230,24 +230,19 @@ function createProposalCard(proposal, isPast = false) {
                 提案者: ${escapeHtml(proposal.submitterName)}
             </div>
             
+            ${isPast ? '' : `
             <div class="proposal-stats">
                 <div class="like-section">
-                    ${isPast ? `
-                        <div class="like-count past-like-count">
-                            最終 <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES} 票
-                        </div>
-                    ` : `
-                        <button 
-                            class="btn-like ${likeButtonClass}" 
-                            onclick="toggleLike('${proposal.id}')"
-                            data-proposal-id="${proposal.id}"
-                        >
-                            ${likeButtonText}
-                        </button>
-                        <div class="like-count">
-                            <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES}
-                        </div>
-                    `}
+                    <button 
+                        class="btn-like ${likeButtonClass}" 
+                        onclick="toggleLike('${proposal.id}')"
+                        data-proposal-id="${proposal.id}"
+                    >
+                        ${likeButtonText}
+                    </button>
+                    <div class="like-count">
+                        <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES}
+                    </div>
                 </div>
                 
                 <div class="progress-bar ${progressClass}">
@@ -255,6 +250,7 @@ function createProposalCard(proposal, isPast = false) {
                 </div>
                 <div class="progress-label">${progress.toFixed(1)}%</div>
             </div>
+            `}
             
             <div class="proposal-actions">
                 <button class="btn btn-secondary btn-sm" onclick="showProposalDetail('${proposal.id}')">
