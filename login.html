@@ -86,6 +86,13 @@
                 return;
             }
 
+            const loginReason = new URLSearchParams(window.location.search).get('reason');
+            if (loginReason) {
+                const loginError = document.getElementById('loginError');
+                loginError.textContent = loginReason;
+                loginError.style.display = 'block';
+            }
+
             // パスワード表示切り替え
             const passwordToggle = document.getElementById('passwordToggle');
             const passwordInput = document.getElementById('password');

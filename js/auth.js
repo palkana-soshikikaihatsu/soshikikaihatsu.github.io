@@ -112,13 +112,29 @@ function getAuthToken() {
 async function sendAuthenticatedRequest(action, data = {}) {
     const token = getAuthToken();
     if (!token) {
-        throw new Error('認証が必要です');
+        redirectToLogin('ログインの有効期限が切れています。再度ログインしてください。');
+        throw new Error('ログインの有効期限が切れています。再度ログインしてください。');
     }
 
-    return await sendRequest(action, {
-        ...data,
-        authToken: token
-    });
+    try {
+        return await sendRequest(action, {
+            ...data,
+            authToken: token
+        });
+    } catch (error) {
+        if ((error.message || '').includes('認証') || (error.message || '').includes('ログイン')) {
+            redirectToLogin(error.message);
+        }
+        throw error;
+    }
+}
+
+function redirectToLogin(message) {
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(AUTH_REMEMBER_KEY);
+    const params = message ? `?reason=${encodeURIComponent(message)}` : '';
+    window.location.href = `login.html${params}`;
 }
 
 /**

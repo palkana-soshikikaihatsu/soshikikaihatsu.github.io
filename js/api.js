@@ -14,7 +14,11 @@ async function sendRequest(action, data = {}) {
         console.log('📤 送信データ:', { action, ...data });
         console.log('📍 送信先URL:', GAS_WEB_APP_URL);
         
-        const response = await fetch(GAS_WEB_APP_URL, {
+        const requestUrl = data.authToken
+            ? `${GAS_WEB_APP_URL}?authToken=${encodeURIComponent(data.authToken)}`
+            : GAS_WEB_APP_URL;
+
+        const response = await fetch(requestUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'text/plain', // CORSプリフライト回避

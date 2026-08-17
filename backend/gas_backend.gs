@@ -41,6 +41,9 @@ function doPost(e) {
     }
 
     const params = JSON.parse(e.postData.contents);
+    if (!params.authToken && e.parameter && e.parameter.authToken) {
+      params.authToken = e.parameter.authToken;
+    }
     const action = params.action;
 
     switch (action) {
@@ -424,7 +427,10 @@ function adminLogin(params) {
  * 認証トークンを検証
  */
 function verifyAuthToken(token) {
-  if (!token) return null;
+  if (token == null || token === "") return null;
+
+  const incoming = String(token).trim();
+  if (!incoming) return null;
 
   const adminSheet = getOrCreateAdminSheet();
   const data = adminSheet.getDataRange().getValues();
@@ -432,10 +438,12 @@ function verifyAuthToken(token) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const storedToken = row[3];
-    const expiresAt = new Date(row[4]);
+    const storedToken = row[3] == null ? "" : String(row[3]).trim();
+    if (!storedToken || storedToken !== incoming) continue;
 
-    if (storedToken === token && now < expiresAt) {
+    const rawExpiry = row[4];
+    const expiresAt = rawExpiry instanceof Date ? rawExpiry : new Date(rawExpiry);
+    if (expiresAt instanceof Date && !isNaN(expiresAt.getTime()) && now < expiresAt) {
       return {
         adminId: row[0],
         adminName: row[2] || row[0],
@@ -706,7 +714,7 @@ function getProgressReports() {
 function addProgressReport(params) {
   const admin = verifyAuthToken(params.authToken);
   if (!admin) {
-    return createResponse(false, "認証が必要です");
+    return createResponse(false, "ログインの有効期限が切れています。再度ログインしてください。");
   }
 
   const proposalId = params.proposalId;
@@ -776,7 +784,7 @@ function addProgressReport(params) {
 function deleteProgressReport(params) {
   const admin = verifyAuthToken(params.authToken);
   if (!admin) {
-    return createResponse(false, "認証が必要です");
+    return createResponse(false, "ログインの有効期限が切れています。再度ログインしてください。");
   }
 
   const reportId = params.reportId;
