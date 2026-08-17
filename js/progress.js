@@ -116,7 +116,7 @@ function createProgressCard(item) {
             </div>
 
             <h3 class="proposal-title">${escapeHtml(item.title)}</h3>
-            <p class="proposal-description">${escapeHtml(truncate(item.description || '', 160))}</p>
+            <p class="proposal-description progress-description">${escapeHtml(item.description || '')}</p>
 
             <div class="progress-meter">
                 <div class="progress-bar ${percent >= 100 ? 'complete' : ''}">
@@ -198,11 +198,6 @@ function formatDate(value) {
         month: 'short',
         day: 'numeric'
     });
-}
-
-function truncate(text, maxLength) {
-    if (text.length <= maxLength) return text;
-    return `${text.substring(0, maxLength)}...`;
 }
 
 function escapeHtml(text) {

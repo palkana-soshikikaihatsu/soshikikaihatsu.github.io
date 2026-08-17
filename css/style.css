@@ -2815,6 +2815,11 @@ body {
     flex-wrap: wrap;
 }
 
+.progress-description {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .list-section-title {
     font-size: 1.4rem;
     margin: 10px 0 16px;
