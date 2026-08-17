@@ -158,18 +158,22 @@ function addProposal(params) {
 }
 
 /**
- * 提案一覧を取得（期限切れを除外）
+ * 提案一覧を取得（掲載中・実施候補＋過去提案）
  */
 function getProposals() {
   const sheet = getOrCreateSheet();
   const data = sheet.getDataRange().getValues();
 
   if (data.length <= 1) {
-    return createResponse(true, "No proposals", { proposals: [] });
+    return createResponse(true, "No proposals", {
+      proposals: [],
+      pastProposals: [],
+    });
   }
 
   const now = new Date();
   const proposals = [];
+  const pastProposals = [];
 
   // ヘッダー行をスキップ（i=1から開始）
   for (let i = 1; i < data.length; i++) {
@@ -181,9 +185,7 @@ function getProposals() {
     // 期限チェック
     if (now > expiryDate && status === "掲載中") {
       status = "期限切れ";
-      // ステータスを更新
       sheet.getRange(i + 1, 11).setValue(status);
-      continue; // 期限切れは表示しない
     }
 
     // いいね数チェック（実施候補への昇格）
@@ -192,28 +194,32 @@ function getProposals() {
       sheet.getRange(i + 1, 11).setValue(status);
     }
 
-    // 掲載中と実施候補のみ返す（保留・期限切れは除外）
+    const proposal = {
+      id: row[0],
+      title: row[1],
+      description: row[2],
+      category: row[3],
+      submitterName: row[4],
+      postedDate: row[6],
+      expiryDate: row[7],
+      likeCount: likeCount,
+      status: status,
+      daysRemaining: Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)),
+    };
+
     if (status === "掲載中" || status === "実施候補") {
-      proposals.push({
-        id: row[0],
-        title: row[1],
-        description: row[2],
-        category: row[3],
-        submitterName: row[4],
-        postedDate: row[6],
-        expiryDate: row[7],
-        likeCount: likeCount,
-        status: status,
-        daysRemaining: Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)),
-      });
+      proposals.push(proposal);
+    } else if (status === "期限切れ" || status === "完了") {
+      pastProposals.push(proposal);
     }
   }
 
-  // 新しい順にソート
   proposals.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+  pastProposals.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
   return createResponse(true, "Success", {
     proposals: proposals,
+    pastProposals: pastProposals,
     totalEmployees: TOTAL_EMPLOYEES,
   });
 }
@@ -1074,7 +1080,30 @@ function createResponse(success, message, data = {}) {
  * 毎日実行して期限切れをチェック（トリガー設定が必要）
  */
 function dailyCleanup() {
-  cleanExpiredProposals();
+  markExpiredProposals();
+}
+
+/**
+ * 掲載期限を過ぎた提案を「期限切れ」に更新（削除はしない）
+ */
+function markExpiredProposals() {
+  const sheet = getOrCreateSheet();
+  const data = sheet.getDataRange().getValues();
+  const now = new Date();
+  let updatedCount = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const expiryDate = new Date(data[i][7]);
+    const status = data[i][10] || "";
+    if (now > expiryDate && status === "掲載中") {
+      sheet.getRange(i + 1, 11).setValue("期限切れ");
+      sheet.getRange(i + 1, 12).setValue(now);
+      sheet.getRange(i + 1, 12).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+      updatedCount++;
+    }
+  }
+
+  return createResponse(true, `${updatedCount}件を期限切れに更新しました`);
 }
 
 /**

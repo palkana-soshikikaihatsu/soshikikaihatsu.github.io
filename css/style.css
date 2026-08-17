@@ -2815,6 +2815,42 @@ body {
     flex-wrap: wrap;
 }
 
+.list-section-title {
+    font-size: 1.4rem;
+    margin: 10px 0 16px;
+    color: var(--text-primary);
+}
+
+.past-proposals-section {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-color);
+}
+
+.past-proposals-lead {
+    color: var(--text-secondary);
+    margin: -8px 0 20px;
+}
+
+.past-proposals-empty {
+    color: var(--text-secondary);
+    padding: 12px 0 24px;
+}
+
+.proposal-card-past {
+    opacity: 0.88;
+}
+
+.badge-expired {
+    background: #e7e5e4;
+    color: #57534e;
+}
+
+.past-like-count {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
 @media (max-width: 768px) {
     .progress-card,
     .progress-admin-card {

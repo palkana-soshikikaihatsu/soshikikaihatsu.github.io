@@ -79,6 +79,10 @@
                     <span class="summary-value highlight" id="candidateCount">0</span>件
                 </div>
                 <div class="summary-item">
+                    <span class="summary-label">過去の提案:</span>
+                    <span class="summary-value" id="pastCount">0</span>件
+                </div>
+                <div class="summary-item">
                     <a href="progress.html" class="summary-link">実施の進捗を見る →</a>
                 </div>
             </section>
@@ -97,6 +101,8 @@
                 <button class="btn btn-primary" onclick="loadProposals()">再読み込み</button>
             </div>
 
+            <h2 class="list-section-title">掲載中の提案</h2>
+
             <!-- 提案リスト -->
             <section id="proposalsList" class="proposals-list">
                 <!-- JavaScriptで動的に生成 -->
@@ -105,13 +111,19 @@
             <!-- 空の状態 -->
             <div id="emptyState" class="empty-state" style="display: none;">
                 <div class="empty-icon">📭</div>
-                <h3>提案がありません</h3>
+                <h3>掲載中の提案はありません</h3>
                 <p>最初の提案を投稿してみませんか？</p>
                 <a href="submit.html" class="btn btn-primary">
                     <span class="btn-icon">✏️</span>
                     提案を投稿する
                 </a>
             </div>
+
+            <section id="pastSection" class="past-proposals-section" hidden>
+                <h2 class="list-section-title">過去の提案一覧</h2>
+                <p class="past-proposals-lead">掲載期間が終了した提案と、実施が完了した提案です。投票はできません。</p>
+                <div id="pastProposalsList" class="proposals-list past-proposals-list"></div>
+            </section>
         </main>
 
         <!-- フッター -->

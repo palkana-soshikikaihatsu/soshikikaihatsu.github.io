@@ -4,7 +4,9 @@
 
 // グローバル変数
 let allProposals = [];
+let allPastProposals = [];
 let filteredProposals = [];
+let filteredPastProposals = [];
 let userEmail = '';
 
 // DOM要素
@@ -19,6 +21,9 @@ const sortBy = document.getElementById('sortBy');
 const searchInput = document.getElementById('searchInput');
 const displayCount = document.getElementById('displayCount');
 const candidateCount = document.getElementById('candidateCount');
+const pastCount = document.getElementById('pastCount');
+const pastSection = document.getElementById('pastSection');
+const pastProposalsList = document.getElementById('pastProposalsList');
 
 // ページ読み込み時
 document.addEventListener('DOMContentLoaded', async () => {
@@ -55,6 +60,7 @@ async function loadProposals(silent = false) {
     try {
         const data = await getProposals();
         allProposals = data.proposals || [];
+        allPastProposals = data.pastProposals || [];
         
         if (!silent) {
             loadingSpinner.style.display = 'none';
@@ -102,6 +108,20 @@ function applyFilters() {
             p.submitterName.toLowerCase().includes(searchTerm)
         );
     }
+
+    let pastFiltered = [...allPastProposals];
+    if (category !== 'all') {
+        pastFiltered = pastFiltered.filter(p => p.category === category);
+    }
+    if (searchTerm) {
+        pastFiltered = pastFiltered.filter(p =>
+            p.title.toLowerCase().includes(searchTerm) ||
+            p.description.toLowerCase().includes(searchTerm) ||
+            p.submitterName.toLowerCase().includes(searchTerm)
+        );
+    }
+    pastFiltered.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+    filteredPastProposals = pastFiltered;
     
     // ソート
     const sortOrder = sortBy.value;
@@ -134,17 +154,37 @@ function displayProposals() {
     if (filteredProposals.length === 0) {
         proposalsList.innerHTML = '';
         emptyState.style.display = 'flex';
+        displayPastProposals();
         return;
     }
     
     emptyState.style.display = 'none';
     proposalsList.innerHTML = filteredProposals.map(proposal => createProposalCard(proposal)).join('');
+    displayPastProposals();
+}
+
+/**
+ * 過去の提案を表示
+ */
+function displayPastProposals() {
+    if (!pastSection || !pastProposalsList) return;
+
+    if (filteredPastProposals.length === 0) {
+        pastSection.hidden = allPastProposals.length === 0;
+        pastProposalsList.innerHTML = allPastProposals.length === 0
+            ? ''
+            : '<p class="past-proposals-empty">この条件に合う過去の提案はありません。</p>';
+        return;
+    }
+
+    pastSection.hidden = false;
+    pastProposalsList.innerHTML = filteredPastProposals.map(proposal => createProposalCard(proposal, true)).join('');
 }
 
 /**
  * 提案カードのHTMLを生成
  */
-function createProposalCard(proposal) {
+function createProposalCard(proposal, isPast = false) {
     const isLiked = isProposalLiked(proposal.id);
     const likeButtonClass = isLiked ? 'liked' : '';
     const likeButtonText = isLiked ? '❤️ いいね済み' : '🤍 いいね';
@@ -153,6 +193,10 @@ function createProposalCard(proposal) {
     let statusBadge = '';
     if (proposal.status === '実施候補') {
         statusBadge = '<span class="badge badge-candidate">🎯 実施候補</span>';
+    } else if (proposal.status === '完了') {
+        statusBadge = '<span class="badge badge-complete">完了</span>';
+    } else if (proposal.status === '期限切れ' || isPast) {
+        statusBadge = '<span class="badge badge-expired">期限切れ</span>';
     } else if (proposal.daysRemaining <= 3) {
         statusBadge = '<span class="badge badge-urgent">⏰ 期限間近</span>';
     }
@@ -160,16 +204,19 @@ function createProposalCard(proposal) {
     // プログレスバー
     const progress = Math.min((proposal.likeCount / CONFIG.TOTAL_EMPLOYEES) * 100, 100);
     const progressClass = progress >= 100 ? 'complete' : '';
+    const dateLabel = isPast
+        ? `掲載終了 ${formatProposalDate(proposal.expiryDate)}`
+        : `残り ${proposal.daysRemaining} 日`;
     
     return `
-        <div class="proposal-card" data-id="${proposal.id}">
+        <div class="proposal-card ${isPast ? 'proposal-card-past' : ''}" data-id="${proposal.id}">
             <div class="proposal-header">
                 <div class="proposal-meta">
                     <span class="category-badge">${proposal.category}</span>
                     ${statusBadge}
                 </div>
                 <div class="proposal-date">
-                    残り ${proposal.daysRemaining} 日
+                    ${dateLabel}
                 </div>
             </div>
             
@@ -185,16 +232,22 @@ function createProposalCard(proposal) {
             
             <div class="proposal-stats">
                 <div class="like-section">
-                    <button 
-                        class="btn-like ${likeButtonClass}" 
-                        onclick="toggleLike('${proposal.id}')"
-                        data-proposal-id="${proposal.id}"
-                    >
-                        ${likeButtonText}
-                    </button>
-                    <div class="like-count">
-                        <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES}
-                    </div>
+                    ${isPast ? `
+                        <div class="like-count past-like-count">
+                            最終 <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES} 票
+                        </div>
+                    ` : `
+                        <button 
+                            class="btn-like ${likeButtonClass}" 
+                            onclick="toggleLike('${proposal.id}')"
+                            data-proposal-id="${proposal.id}"
+                        >
+                            ${likeButtonText}
+                        </button>
+                        <div class="like-count">
+                            <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES}
+                        </div>
+                    `}
                 </div>
                 
                 <div class="progress-bar ${progressClass}">
@@ -219,6 +272,9 @@ function updateStats() {
     displayCount.textContent = filteredProposals.length;
     const candidates = allProposals.filter(p => p.status === '実施候補');
     candidateCount.textContent = candidates.length;
+    if (pastCount) {
+        pastCount.textContent = filteredPastProposals.length;
+    }
 }
 
 /**
@@ -308,7 +364,8 @@ function addNumberAnimation(proposalId) {
  * 提案詳細をモーダルで表示
  */
 function showProposalDetail(proposalId) {
-    const proposal = allProposals.find(p => p.id === proposalId);
+    const proposal = allProposals.find(p => p.id === proposalId)
+        || allPastProposals.find(p => p.id === proposalId);
     if (!proposal) return;
     
     const modal = document.getElementById('proposalModal');
@@ -318,14 +375,22 @@ function showProposalDetail(proposalId) {
     const likeButtonClass = isLiked ? 'liked' : '';
     const likeButtonText = isLiked ? '❤️ いいね済み' : '🤍 いいね';
     
-    const postedDate = new Date(proposal.postedDate).toLocaleDateString('ja-JP');
-    const expiryDate = new Date(proposal.expiryDate).toLocaleDateString('ja-JP');
+    const postedDate = formatProposalDate(proposal.postedDate);
+    const expiryDate = formatProposalDate(proposal.expiryDate);
+    const isPast = proposal.status === '期限切れ' || proposal.status === '完了';
+    const statusBadge = proposal.status === '実施候補'
+        ? '<span class="badge badge-candidate">🎯 実施候補</span>'
+        : proposal.status === '完了'
+            ? '<span class="badge badge-complete">完了</span>'
+            : isPast
+                ? '<span class="badge badge-expired">期限切れ</span>'
+                : '';
     
     modalBody.innerHTML = `
         <div class="modal-header">
             <div class="modal-badges">
                 <span class="category-badge">${proposal.category}</span>
-                ${proposal.status === '実施候補' ? '<span class="badge badge-candidate">🎯 実施候補</span>' : ''}
+                ${statusBadge}
             </div>
             <h2>${escapeHtml(proposal.title)}</h2>
         </div>
@@ -350,21 +415,23 @@ function showProposalDetail(proposalId) {
                     <span class="detail-value">${expiryDate}</span>
                 </div>
                 <div class="detail-item">
-                    <span class="detail-label">残り日数:</span>
-                    <span class="detail-value">${proposal.daysRemaining}日</span>
+                    <span class="detail-label">${isPast ? '結果:' : '残り日数:'}</span>
+                    <span class="detail-value">${isPast ? proposal.status : `${proposal.daysRemaining}日`}</span>
                 </div>
             </div>
             
             <div class="detail-section">
                 <h3>📊 投票状況</h3>
                 <div class="modal-like-section">
-                    <button 
-                        class="btn-like btn-large ${likeButtonClass}" 
-                        onclick="toggleLike('${proposal.id}')"
-                        data-proposal-id="${proposal.id}"
-                    >
-                        ${likeButtonText}
-                    </button>
+                    ${isPast ? '' : `
+                        <button 
+                            class="btn-like btn-large ${likeButtonClass}" 
+                            onclick="toggleLike('${proposal.id}')"
+                            data-proposal-id="${proposal.id}"
+                        >
+                            ${likeButtonText}
+                        </button>
+                    `}
                     <div class="like-stats">
                         <div class="like-count-large">
                             ${proposal.likeCount} <span class="like-label">/ ${CONFIG.TOTAL_EMPLOYEES} 票</span>
@@ -373,7 +440,9 @@ function showProposalDetail(proposalId) {
                             <div class="progress-fill" style="width: ${Math.min((proposal.likeCount / CONFIG.TOTAL_EMPLOYEES) * 100, 100)}%"></div>
                         </div>
                         <div class="progress-info">
-                            あと <strong>${Math.max(CONFIG.TOTAL_EMPLOYEES - proposal.likeCount, 0)}</strong> 票で実施候補に昇格
+                            ${isPast
+                                ? '掲載期間は終了しています'
+                                : `あと <strong>${Math.max(CONFIG.TOTAL_EMPLOYEES - proposal.likeCount, 0)}</strong> 票で実施候補に昇格`}
                         </div>
                     </div>
                 </div>
@@ -397,6 +466,13 @@ function closeModal() {
 /**
  * HTMLエスケープ
  */
+function formatProposalDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('ja-JP');
+}
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
