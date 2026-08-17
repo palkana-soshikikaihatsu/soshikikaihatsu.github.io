@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>進捗報告 - いいね！パルプロジェクト</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="header-title">🚀 進捗報告</h1>
+                <p class="header-subtitle">実施中の提案が、いまどこまで進んでいるかを公開しています</p>
+            </div>
+            <a href="index.html" class="btn btn-back">← ホームに戻る</a>
+        </header>
+
+        <main class="main-content">
+            <section class="progress-intro">
+                <p>
+                    100票を獲得した提案は実施ステージへ進みます。<br>
+                    組織開発課が関係部署と連携しながら進めている内容を、ここで随時お知らせします。
+                </p>
+            </section>
+
+            <section class="summary-bar">
+                <div class="summary-item">
+                    <span class="summary-label">実施中:</span>
+                    <span class="summary-value highlight" id="inProgressCount">0</span>件
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">実施準備:</span>
+                    <span class="summary-value" id="candidateCount">0</span>件
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">完了:</span>
+                    <span class="summary-value" id="completedCount">0</span>件
+                </div>
+            </section>
+
+            <section class="filter-section">
+                <div class="progress-filter-bar" role="tablist">
+                    <button class="progress-filter-btn active" data-filter="all">すべて</button>
+                    <button class="progress-filter-btn" data-filter="実施中">実施中</button>
+                    <button class="progress-filter-btn" data-filter="実施候補">実施準備</button>
+                    <button class="progress-filter-btn" data-filter="完了">完了</button>
+                </div>
+            </section>
+
+            <div id="loadingSpinner" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>読み込み中...</p>
+            </div>
+
+            <div id="errorMessage" class="error-container" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h3>データの取得に失敗しました</h3>
+                <p id="errorText"></p>
+                <button class="btn btn-primary" onclick="loadProgressItems()">再読み込み</button>
+            </div>
+
+            <section id="progressList" class="progress-list"></section>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">🌱</div>
+                <h3>表示できる進捗報告はまだありません</h3>
+                <p>100票を獲得した提案の実施が始まると、ここに進捗が表示されます。</p>
+                <a href="proposals.html" class="btn btn-primary">提案一覧を見る</a>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 いいね！パルプロジェクト | 組織開発課</p>
+        </footer>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/progress.js"></script>
+</body>
+</html>

@@ -111,6 +111,13 @@ async function getProposals() {
 }
 
 /**
+ * 実施中・完了提案の進捗報告を取得
+ */
+async function getProgressReports() {
+    return await getRequest('getProgressReports');
+}
+
+/**
  * 全提案を取得（管理者用、期限切れ含む）
  */
 async function getAllProposals(authToken) {

@@ -3,6 +3,7 @@
  */
 
 let allProposals = [];
+let progressItems = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!requireAdminAuth()) {
@@ -22,6 +23,7 @@ function initializeAdmin() {
     setupLogout();
     setupModals();
     setupSettings();
+    setupProgressTab();
     
     loadDashboardData();
 }
@@ -45,6 +47,10 @@ function setupNavigation() {
 
             if (tabId === 'proposals') {
                 loadProposalsTable();
+            }
+
+            if (tabId === 'progress') {
+                loadProgressAdminList();
             }
         });
     });
@@ -95,6 +101,31 @@ function setupModals() {
 
     document.getElementById('statusFilter').addEventListener('change', filterProposals);
     document.getElementById('searchInput').addEventListener('input', filterProposals);
+
+    const progressModal = document.getElementById('progressModal');
+    const closeProgress = () => {
+        progressModal.style.display = 'none';
+    };
+
+    document.getElementById('closeProgressModal').addEventListener('click', closeProgress);
+    document.getElementById('cancelProgressBtn').addEventListener('click', closeProgress);
+    progressModal.querySelector('.modal-overlay').addEventListener('click', closeProgress);
+    document.getElementById('progressReportForm').addEventListener('submit', handleProgressSubmit);
+
+    const percentInput = document.getElementById('progressPercent');
+    const percentRange = document.getElementById('progressPercentRange');
+    percentInput.addEventListener('input', () => {
+        percentRange.value = percentInput.value;
+    });
+    percentRange.addEventListener('input', () => {
+        percentInput.value = percentRange.value;
+    });
+    document.getElementById('progressStatus').addEventListener('change', (e) => {
+        if (e.target.value === '完了') {
+            percentInput.value = 100;
+            percentRange.value = 100;
+        }
+    });
 }
 
 /**
@@ -131,6 +162,8 @@ function updateStats() {
     const pending = allProposals.filter(p => p.status === '保留');
     const active = allProposals.filter(p => p.status === '掲載中');
     const candidates = allProposals.filter(p => p.status === '実施候補');
+    const inProgress = allProposals.filter(p => p.status === '実施中');
+    const completed = allProposals.filter(p => p.status === '完了');
     const expired = allProposals.filter(p => p.status === '期限切れ');
     const totalLikes = allProposals.reduce((sum, p) => sum + (p.likeCount || 0), 0);
 
@@ -139,6 +172,16 @@ function updateStats() {
     document.getElementById('statActive').textContent = active.length;
     document.getElementById('statCandidate').textContent = candidates.length;
     document.getElementById('statTotalLikes').textContent = totalLikes;
+
+    const inProgressStat = document.getElementById('statInProgress');
+    if (inProgressStat) {
+        inProgressStat.textContent = inProgress.length;
+    }
+
+    const completedStat = document.getElementById('statCompleted');
+    if (completedStat) {
+        completedStat.textContent = completed.length;
+    }
     
     const expiredStat = document.getElementById('statExpired');
     if (expiredStat) {
@@ -266,6 +309,7 @@ function renderProposalsTable(proposals) {
             </td>
             <td class="actions-cell">
                 <button class="btn btn-sm btn-edit" onclick="openEditModal('${p.id}')">✏️</button>
+                ${['実施候補', '実施中', '完了'].includes(p.status) ? `<button class="btn btn-sm btn-edit" onclick="openProgressModal('${p.id}')" title="進捗報告">🚀</button>` : ''}
                 <button class="btn btn-sm btn-delete" onclick="openDeleteModal('${p.id}')">🗑️</button>
             </td>
         </tr>
@@ -470,6 +514,175 @@ async function handleCleanExpired() {
 }
 
 /**
+ * 進捗報告タブの初期化
+ */
+function setupProgressTab() {
+    const refreshBtn = document.getElementById('refreshProgressBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadProgressAdminList);
+    }
+}
+
+/**
+ * 管理画面の進捗一覧を読み込み
+ */
+async function loadProgressAdminList() {
+    const container = document.getElementById('progressAdminList');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>読み込み中...</p>
+        </div>
+    `;
+
+    try {
+        const data = await getProgressReports();
+        progressItems = data.items || [];
+        renderProgressAdminList();
+    } catch (error) {
+        console.error('進捗報告の取得エラー:', error);
+        const isUnknownAction = (error.message || '').includes('Unknown action');
+        container.innerHTML = `
+            <div class="error-container">
+                <p>${isUnknownAction
+                    ? '進捗報告機能を有効にするには、Google Apps Scriptの最新コードを再デプロイしてください。'
+                    : '進捗報告の読み込みに失敗しました'}</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * 管理画面の進捗一覧を描画
+ */
+function renderProgressAdminList() {
+    const container = document.getElementById('progressAdminList');
+    if (!container) return;
+
+    if (progressItems.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🌱</div>
+                <h3>実施対象の提案はまだありません</h3>
+                <p>提案管理でステータスを「実施候補」にすると、ここに表示されます。</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = progressItems.map(item => {
+        const percent = Math.max(0, Math.min(100, Number(item.progressPercent) || 0));
+        const reports = item.reports || [];
+
+        return `
+            <article class="progress-admin-card">
+                <div class="progress-card-header">
+                    <div class="proposal-meta">
+                        <span class="category-badge">${escapeHtml(item.category || '未分類')}</span>
+                        <span class="status-badge status-${getStatusClass(item.status)}">${escapeHtml(item.status)}</span>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="openProgressModal('${item.id}')">進捗を追加</button>
+                </div>
+                <h3>${escapeHtml(item.title)}</h3>
+                <div class="progress-meter">
+                    <div class="progress-bar ${percent >= 100 ? 'complete' : ''}">
+                        <div class="progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="progress-label">${percent}%</div>
+                </div>
+                ${item.department ? `<p class="progress-department">担当: ${escapeHtml(item.department)}</p>` : ''}
+                ${reports.length === 0 ? '<p class="progress-latest-empty">まだ進捗報告はありません</p>' : `
+                    <ul class="progress-admin-reports">
+                        ${reports.map(report => `
+                            <li>
+                                <div class="progress-timeline-meta">
+                                    <span>${formatAdminDate(report.reportedAt)} ・ ${Number(report.progressPercent) || 0}%</span>
+                                    <button class="btn btn-sm btn-delete" onclick="deleteProgressReportItem('${report.id}')">削除</button>
+                                </div>
+                                <p>${escapeHtml(report.content)}</p>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `}
+            </article>
+        `;
+    }).join('');
+}
+
+/**
+ * 進捗報告モーダルを開く
+ */
+function openProgressModal(proposalId) {
+    const item = progressItems.find(p => p.id === proposalId) || allProposals.find(p => p.id === proposalId);
+    if (!item) return;
+
+    document.getElementById('progressProposalId').value = item.id;
+    document.getElementById('progressProposalTitle').textContent = item.title;
+    document.getElementById('progressStatus').value = item.status === '完了' ? '完了' : '実施中';
+    document.getElementById('progressDepartment').value = item.department || '';
+    document.getElementById('progressContent').value = '';
+
+    const percent = item.status === '完了' ? 100 : Math.max(0, Number(item.progressPercent) || 0);
+    document.getElementById('progressPercent').value = percent;
+    document.getElementById('progressPercentRange').value = percent;
+
+    document.getElementById('progressModal').style.display = 'flex';
+}
+
+/**
+ * 進捗報告の投稿
+ */
+async function handleProgressSubmit(e) {
+    e.preventDefault();
+
+    const data = {
+        proposalId: document.getElementById('progressProposalId').value,
+        status: document.getElementById('progressStatus').value,
+        progressPercent: Number(document.getElementById('progressPercent').value) || 0,
+        department: document.getElementById('progressDepartment').value.trim(),
+        content: document.getElementById('progressContent').value.trim()
+    };
+
+    try {
+        await sendAuthenticatedRequest('addProgressReport', data);
+        document.getElementById('progressModal').style.display = 'none';
+        showAdminSuccess('進捗報告を公開しました');
+        await loadProgressAdminList();
+        loadDashboardData();
+    } catch (error) {
+        console.error('進捗報告の投稿エラー:', error);
+        showAdminError(error.message || '進捗報告の投稿に失敗しました');
+    }
+}
+
+/**
+ * 進捗報告を削除
+ */
+async function deleteProgressReportItem(reportId) {
+    if (!confirm('この進捗報告を削除しますか？')) {
+        return;
+    }
+
+    try {
+        await sendAuthenticatedRequest('deleteProgressReport', { reportId: reportId });
+        showAdminSuccess('進捗報告を削除しました');
+        await loadProgressAdminList();
+    } catch (error) {
+        console.error('進捗報告の削除エラー:', error);
+        showAdminError('進捗報告の削除に失敗しました');
+    }
+}
+
+function formatAdminDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('ja-JP');
+}
+
+/**
  * ステータスクラスを取得
  */
 function getStatusClass(status) {
@@ -477,6 +690,8 @@ function getStatusClass(status) {
         case '保留': return 'pending';
         case '掲載中': return 'active';
         case '実施候補': return 'candidate';
+        case '実施中': return 'in-progress';
+        case '完了': return 'completed';
         case '期限切れ': return 'expired';
         default: return '';
     }
