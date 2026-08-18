@@ -70,6 +70,8 @@ function doPost(e) {
         return deleteProgressReport(params);
       case "addComment":
         return addComment(params);
+      case "deleteComment":
+        return deleteComment(params);
       default:
         return createResponse(false, "Unknown action");
     }
@@ -871,10 +873,21 @@ function getCommentCounts() {
   return counts;
 }
 
+function getProposalTitles() {
+  const sheet = getOrCreateSheet();
+  const data = sheet.getDataRange().getValues();
+  const titles = {};
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0]) titles[data[i][0]] = data[i][1] || "";
+  }
+  return titles;
+}
+
 function getComments(e) {
   const proposalId = e && e.parameter ? e.parameter.proposalId : "";
   const sheet = getOrCreateCommentSheet();
   const data = sheet.getDataRange().getValues();
+  const titles = getProposalTitles();
   const comments = [];
 
   for (let i = 1; i < data.length; i++) {
@@ -883,6 +896,7 @@ function getComments(e) {
     comments.push({
       id: row[0],
       proposalId: row[1],
+      proposalTitle: titles[row[1]] || "",
       postedDate: row[2],
       handleName: row[3] || "匿名",
       type: row[4] || "応援",
@@ -952,6 +966,30 @@ function addComment(params) {
       content: content,
     },
   });
+}
+
+function deleteComment(params) {
+  const admin = verifyAuthToken(params.authToken);
+  if (!admin) {
+    return createResponse(false, "ログインの有効期限が切れています。再度ログインしてください。");
+  }
+
+  const commentId = params.commentId;
+  if (!commentId) {
+    return createResponse(false, "commentIdが必要です");
+  }
+
+  const sheet = getOrCreateCommentSheet();
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === commentId) {
+      sheet.deleteRow(i + 1);
+      return createResponse(true, "コメントを削除しました");
+    }
+  }
+
+  return createResponse(false, "コメントが見つかりません");
 }
 
 // ========== メール通知関数 ==========

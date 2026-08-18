@@ -39,6 +39,9 @@
                 <button class="admin-nav-btn" data-tab="progress">
                     <span>🚀</span> 進捗報告
                 </button>
+                <button class="admin-nav-btn" data-tab="comments">
+                    <span>💬</span> コメント管理
+                </button>
                 <button class="admin-nav-btn" data-tab="settings">
                     <span>⚙️</span> 設定
                 </button>
@@ -188,6 +191,27 @@
                     実施候補の提案に進捗報告を追加すると「実施中」になり、公開ページに表示されます。進捗率100%で投稿すると「完了」になります。
                 </p>
                 <div id="progressAdminList" class="progress-admin-list">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>読み込み中...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="commentsTab" class="admin-tab">
+                <div class="admin-toolbar">
+                    <h2 class="section-title">💬 コメント管理</h2>
+                    <div class="admin-toolbar-actions">
+                        <input type="text" id="commentSearchInput" class="search-input" placeholder="提案名・本文で検索...">
+                        <button id="refreshCommentsBtn" class="btn btn-secondary btn-sm" type="button">
+                            🔄 更新
+                        </button>
+                    </div>
+                </div>
+                <p class="progress-admin-help">
+                    誹謗中傷や不適切なコメントは、ここから削除できます。
+                </p>
+                <div id="adminCommentList" class="progress-admin-list">
                     <div class="loading-container">
                         <div class="loading-spinner"></div>
                         <p>読み込み中...</p>

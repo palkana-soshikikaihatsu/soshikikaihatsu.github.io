@@ -4,6 +4,7 @@
 
 let allProposals = [];
 let progressItems = [];
+let adminComments = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!requireAdminAuth()) {
@@ -24,6 +25,7 @@ function initializeAdmin() {
     setupModals();
     setupSettings();
     setupProgressTab();
+    setupCommentsTab();
     
     loadDashboardData();
 }
@@ -51,6 +53,10 @@ function setupNavigation() {
 
             if (tabId === 'progress') {
                 loadProgressAdminList();
+            }
+
+            if (tabId === 'comments') {
+                loadAdminComments();
             }
         });
     });
@@ -520,6 +526,96 @@ function setupProgressTab() {
     const refreshBtn = document.getElementById('refreshProgressBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', loadProgressAdminList);
+    }
+}
+
+function setupCommentsTab() {
+    const refreshBtn = document.getElementById('refreshCommentsBtn');
+    const searchInput = document.getElementById('commentSearchInput');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadAdminComments);
+    }
+    if (searchInput) {
+        searchInput.addEventListener('input', renderAdminComments);
+    }
+}
+
+async function loadAdminComments() {
+    const container = document.getElementById('adminCommentList');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>読み込み中...</p>
+        </div>
+    `;
+
+    try {
+        const data = await getComments();
+        adminComments = data.comments || [];
+        renderAdminComments();
+    } catch (error) {
+        console.error('コメント取得エラー:', error);
+        container.innerHTML = `
+            <div class="error-container">
+                <p>コメントの読み込みに失敗しました</p>
+            </div>
+        `;
+    }
+}
+
+function renderAdminComments() {
+    const container = document.getElementById('adminCommentList');
+    if (!container) return;
+
+    const query = (document.getElementById('commentSearchInput')?.value || '').toLowerCase().trim();
+    const filtered = adminComments.filter(comment => {
+        if (!query) return true;
+        return (comment.proposalTitle || '').toLowerCase().includes(query)
+            || (comment.content || '').toLowerCase().includes(query)
+            || (comment.handleName || '').toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>コメントはありません</h3>
+                <p>投稿されたコメントがここに表示されます。</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filtered.map(comment => `
+        <article class="progress-admin-card">
+            <div class="progress-card-header">
+                <div class="proposal-meta">
+                    <span class="comment-type-badge comment-type-${comment.type === '質問' ? 'question' : 'support'}">${escapeHtml(comment.type || '応援')}</span>
+                    <span class="comment-handle">${escapeHtml(comment.handleName || '匿名')}</span>
+                    <span class="comment-date">${formatAdminDate(comment.postedDate)}</span>
+                </div>
+                <button class="btn btn-sm btn-delete" onclick="deleteAdminComment('${comment.id}')">削除</button>
+            </div>
+            <h3>${escapeHtml(comment.proposalTitle || '（提案タイトル不明）')}</h3>
+            <p class="comment-content">${escapeHtml(comment.content || '')}</p>
+        </article>
+    `).join('');
+}
+
+async function deleteAdminComment(commentId) {
+    if (!confirm('このコメントを削除しますか？この操作は取り消せません。')) {
+        return;
+    }
+
+    try {
+        await sendAuthenticatedRequest('deleteComment', { commentId });
+        adminComments = adminComments.filter(comment => comment.id !== commentId);
+        renderAdminComments();
+        showAdminSuccess('コメントを削除しました');
+    } catch (error) {
+        console.error('コメント削除エラー:', error);
+        showAdminError(error.message || 'コメントの削除に失敗しました');
     }
 }
 

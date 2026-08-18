@@ -3003,3 +3003,14 @@ body {
 .comment-empty {
     color: var(--text-secondary);
 }
+
+.comment-warning {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #9a3412;
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
