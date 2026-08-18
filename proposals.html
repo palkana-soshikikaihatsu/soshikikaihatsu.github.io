@@ -143,6 +143,57 @@
         </div>
     </div>
 
+    <div id="commentModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeCommentModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeCommentModal()">×</button>
+            <div class="modal-header">
+                <h2>💬 コメント</h2>
+                <p class="comment-modal-title" id="commentProposalTitle"></p>
+            </div>
+            <div class="modal-body">
+                <form id="commentForm" class="comment-form">
+                    <input type="hidden" id="commentProposalId">
+
+                    <div class="form-group">
+                        <label class="form-label">コメントの種類</label>
+                        <div class="comment-type-options">
+                            <label class="comment-type-option">
+                                <input type="radio" name="commentType" value="応援" checked>
+                                <span>応援</span>
+                            </label>
+                            <label class="comment-type-option">
+                                <input type="radio" name="commentType" value="質問">
+                                <span>質問</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="commentHandleName" class="form-label">ハンドルネーム</label>
+                        <input type="text" id="commentHandleName" class="form-input" maxlength="20" placeholder="未入力の場合は匿名">
+                        <label class="checkbox-label comment-anonymous-label">
+                            <input type="checkbox" id="commentAnonymous">
+                            匿名で投稿する
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="commentContent" class="form-label required">コメント</label>
+                        <textarea id="commentContent" class="form-textarea" required maxlength="500" rows="4" placeholder="質問や応援のメッセージを入力してください"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">投稿する</button>
+                    </div>
+                </form>
+
+                <div class="comment-list-header">コメント一覧</div>
+                <div id="commentList" class="comment-list"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/proposals.js"></script>

@@ -22,6 +22,7 @@ const SPREADSHEET_ID = "1_JbzctKYfqSLwPJ-7aBajENreTJFCjk_Q-J4KQThDzY"; // スプ
 const PROPOSAL_SHEET_NAME = "提案一覧";
 const ADMIN_SHEET_NAME = "管理者";
 const PROGRESS_SHEET_NAME = "進捗報告";
+const COMMENT_SHEET_NAME = "コメント";
 const TOTAL_EMPLOYEES = 600; // 全従業員数
 const PROPOSAL_DURATION_DAYS = 30; // 提案の掲載期間（日数）
 const AUTH_TOKEN_EXPIRY_HOURS = 24; // 認証トークン有効期限（時間）
@@ -67,6 +68,8 @@ function doPost(e) {
         return addProgressReport(params);
       case "deleteProgressReport":
         return deleteProgressReport(params);
+      case "addComment":
+        return addComment(params);
       default:
         return createResponse(false, "Unknown action");
     }
@@ -97,6 +100,8 @@ function doGet(e) {
         return cleanExpiredProposals();
       case "getProgressReports":
         return getProgressReports();
+      case "getComments":
+        return getComments(e);
       default:
         return createResponse(false, "Unknown action");
     }
@@ -206,6 +211,7 @@ function getProposals() {
       postedDate: row[6],
       expiryDate: row[7],
       likeCount: likeCount,
+      commentCount: 0,
       status: status,
       daysRemaining: Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)),
     };
@@ -216,6 +222,14 @@ function getProposals() {
       pastProposals.push(proposal);
     }
   }
+
+  const commentCounts = getCommentCounts();
+  proposals.forEach(function (proposal) {
+    proposal.commentCount = commentCounts[proposal.id] || 0;
+  });
+  pastProposals.forEach(function (proposal) {
+    proposal.commentCount = commentCounts[proposal.id] || 0;
+  });
 
   proposals.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
   pastProposals.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
@@ -815,6 +829,129 @@ function generateProgressReportId() {
     "_" +
     Math.random().toString(36).substr(2, 9)
   );
+}
+
+// ========== コメント関数 ==========
+
+function getOrCreateCommentSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(COMMENT_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(COMMENT_SHEET_NAME);
+    sheet.appendRow([
+      "コメントID",
+      "提案ID",
+      "投稿日時",
+      "ハンドルネーム",
+      "種別",
+      "本文",
+      "ユーザーID",
+    ]);
+    const headerRange = sheet.getRange(1, 1, 1, 7);
+    headerRange.setFontWeight("bold");
+    headerRange.setBackground("#4285f4");
+    headerRange.setFontColor("#ffffff");
+  }
+
+  return sheet;
+}
+
+function getCommentCounts() {
+  const sheet = getOrCreateCommentSheet();
+  const data = sheet.getDataRange().getValues();
+  const counts = {};
+
+  for (let i = 1; i < data.length; i++) {
+    const proposalId = data[i][1];
+    if (!proposalId) continue;
+    counts[proposalId] = (counts[proposalId] || 0) + 1;
+  }
+
+  return counts;
+}
+
+function getComments(e) {
+  const proposalId = e && e.parameter ? e.parameter.proposalId : "";
+  const sheet = getOrCreateCommentSheet();
+  const data = sheet.getDataRange().getValues();
+  const comments = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (proposalId && row[1] !== proposalId) continue;
+    comments.push({
+      id: row[0],
+      proposalId: row[1],
+      postedDate: row[2],
+      handleName: row[3] || "匿名",
+      type: row[4] || "応援",
+      content: row[5] || "",
+    });
+  }
+
+  comments.sort(function (a, b) {
+    return new Date(b.postedDate) - new Date(a.postedDate);
+  });
+
+  return createResponse(true, "Success", { comments: comments });
+}
+
+function addComment(params) {
+  const proposalId = params.proposalId;
+  const content = (params.content || "").toString().trim();
+  const type = params.type === "質問" ? "質問" : "応援";
+  const anonymous = params.anonymous === true || params.anonymous === "true";
+  let handleName = (params.handleName || "").toString().trim();
+
+  if (!proposalId) {
+    return createResponse(false, "proposalIdが必要です");
+  }
+  if (!content) {
+    return createResponse(false, "コメントを入力してください");
+  }
+  if (content.length > 500) {
+    return createResponse(false, "コメントは500文字以内で入力してください");
+  }
+
+  const proposalSheet = getOrCreateSheet();
+  if (!findProposalRow(proposalSheet, proposalId)) {
+    return createResponse(false, "提案が見つかりません");
+  }
+
+  if (anonymous || !handleName) {
+    handleName = "匿名";
+  }
+  if (handleName.length > 20) {
+    handleName = handleName.substring(0, 20);
+  }
+
+  const commentId =
+    "CMT_" + new Date().getTime() + "_" + Math.random().toString(36).substr(2, 9);
+  const sheet = getOrCreateCommentSheet();
+  const now = new Date();
+
+  sheet.appendRow([
+    commentId,
+    proposalId,
+    now,
+    handleName,
+    type,
+    content,
+    params.userId || "",
+  ]);
+  sheet.getRange(sheet.getLastRow(), 3).setNumberFormat("yyyy/mm/dd hh:mm:ss");
+
+  return createResponse(true, "コメントを投稿しました", {
+    comment: {
+      id: commentId,
+      proposalId: proposalId,
+      postedDate: now.toISOString(),
+      handleName: handleName,
+      type: type,
+      content: content,
+    },
+  });
 }
 
 // ========== メール通知関数 ==========

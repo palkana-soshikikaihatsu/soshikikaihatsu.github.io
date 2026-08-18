@@ -7,6 +7,7 @@ let allProposals = [];
 let allPastProposals = [];
 let filteredProposals = [];
 let filteredPastProposals = [];
+let commentsByProposal = {};
 let userEmail = '';
 
 // DOM要素
@@ -40,6 +41,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     statusFilter.addEventListener('change', applyFilters);
     sortBy.addEventListener('change', applyFilters);
     searchInput.addEventListener('input', applyFilters);
+
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', handleCommentSubmit);
+    }
+    const anonymousCheck = document.getElementById('commentAnonymous');
+    const handleInput = document.getElementById('commentHandleName');
+    if (anonymousCheck && handleInput) {
+        anonymousCheck.addEventListener('change', () => {
+            handleInput.disabled = anonymousCheck.checked;
+            if (anonymousCheck.checked) {
+                handleInput.placeholder = '匿名で投稿します';
+            } else {
+                handleInput.placeholder = '未入力の場合は匿名';
+            }
+        });
+    }
     
     // 自動更新（30秒ごと）
     setInterval(async () => {
@@ -61,6 +79,7 @@ async function loadProposals(silent = false) {
         const data = await getProposals();
         allProposals = data.proposals || [];
         allPastProposals = data.pastProposals || [];
+        await loadComments(silent);
         
         if (!silent) {
             loadingSpinner.style.display = 'none';
@@ -243,6 +262,14 @@ function createProposalCard(proposal, isPast = false) {
                     <div class="like-count">
                         <span class="like-number">${proposal.likeCount}</span> / ${CONFIG.TOTAL_EMPLOYEES}
                     </div>
+                    <button
+                        class="btn-comment"
+                        type="button"
+                        onclick="openCommentModal('${proposal.id}')"
+                    >
+                        💬 コメント
+                        <span class="comment-count">${getCommentCount(proposal.id)}</span>
+                    </button>
                 </div>
                 
                 <div class="progress-bar ${progressClass}">
@@ -256,6 +283,11 @@ function createProposalCard(proposal, isPast = false) {
                 <button class="btn btn-secondary btn-sm" onclick="showProposalDetail('${proposal.id}')">
                     詳細を見る
                 </button>
+                ${isPast ? `
+                <button class="btn btn-secondary btn-sm" onclick="openCommentModal('${proposal.id}')">
+                    💬 コメント ${getCommentCount(proposal.id)}
+                </button>
+                ` : ''}
             </div>
         </div>
     `;
@@ -443,6 +475,16 @@ function showProposalDetail(proposalId) {
                     </div>
                 </div>
             </div>
+
+            <div class="detail-section">
+                <h3>💬 コメント</h3>
+                ${isPast ? '' : `
+                    <button class="btn btn-primary btn-sm" type="button" onclick="openCommentModal('${proposal.id}')">
+                        コメントを投稿する
+                    </button>
+                `}
+                <div class="comment-list">${renderCommentItems(proposal.id)}</div>
+            </div>
         </div>
     `;
     
@@ -456,7 +498,143 @@ function showProposalDetail(proposalId) {
 function closeModal() {
     const modal = document.getElementById('proposalModal');
     modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
+    if (document.getElementById('commentModal').style.display !== 'flex') {
+        document.body.style.overflow = 'auto';
+    }
+}
+
+async function loadComments(silent = false) {
+    try {
+        const data = await getComments();
+        commentsByProposal = {};
+        (data.comments || []).forEach(comment => {
+            if (!commentsByProposal[comment.proposalId]) {
+                commentsByProposal[comment.proposalId] = [];
+            }
+            commentsByProposal[comment.proposalId].push(comment);
+        });
+    } catch (error) {
+        if (!silent) {
+            console.warn('コメントの取得に失敗:', error);
+        }
+    }
+}
+
+function getCommentCount(proposalId) {
+    if (commentsByProposal[proposalId]) {
+        return commentsByProposal[proposalId].length;
+    }
+    const proposal = allProposals.find(p => p.id === proposalId)
+        || allPastProposals.find(p => p.id === proposalId);
+    return proposal && proposal.commentCount ? proposal.commentCount : 0;
+}
+
+function renderCommentItems(proposalId) {
+    const comments = commentsByProposal[proposalId] || [];
+    if (comments.length === 0) {
+        return '<p class="comment-empty">まだコメントはありません。最初の応援や質問を投稿してみましょう。</p>';
+    }
+
+    return comments.map(comment => `
+        <article class="comment-item">
+            <div class="comment-item-meta">
+                <span class="comment-type-badge comment-type-${comment.type === '質問' ? 'question' : 'support'}">${escapeHtml(comment.type || '応援')}</span>
+                <span class="comment-handle">${escapeHtml(comment.handleName || '匿名')}</span>
+                <span class="comment-date">${formatProposalDate(comment.postedDate)}</span>
+            </div>
+            <p class="comment-content">${escapeHtml(comment.content || '')}</p>
+        </article>
+    `).join('');
+}
+
+function openCommentModal(proposalId) {
+    const proposal = allProposals.find(p => p.id === proposalId)
+        || allPastProposals.find(p => p.id === proposalId);
+    if (!proposal) return;
+
+    const isPast = proposal.status === '期限切れ' || proposal.status === '完了';
+    document.getElementById('commentProposalId').value = proposal.id;
+    document.getElementById('commentProposalTitle').textContent = proposal.title;
+    document.getElementById('commentList').innerHTML = renderCommentItems(proposal.id);
+    document.getElementById('commentContent').value = '';
+
+    const savedName = localStorage.getItem(STORAGE_KEYS.HANDLE_NAME) || '';
+    const handleInput = document.getElementById('commentHandleName');
+    const anonymousCheck = document.getElementById('commentAnonymous');
+    handleInput.value = savedName;
+    anonymousCheck.checked = false;
+    handleInput.disabled = false;
+    handleInput.placeholder = '未入力の場合は匿名';
+
+    document.getElementById('commentForm').style.display = isPast ? 'none' : 'block';
+    document.getElementById('commentModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCommentModal() {
+    document.getElementById('commentModal').style.display = 'none';
+    if (document.getElementById('proposalModal').style.display !== 'flex') {
+        document.body.style.overflow = 'auto';
+    }
+}
+
+async function handleCommentSubmit(e) {
+    e.preventDefault();
+
+    const proposalId = document.getElementById('commentProposalId').value;
+    const anonymous = document.getElementById('commentAnonymous').checked;
+    const handleName = document.getElementById('commentHandleName').value.trim();
+    const content = document.getElementById('commentContent').value.trim();
+    const typeInput = document.querySelector('input[name="commentType"]:checked');
+
+    if (!content) {
+        showError('コメントを入力してください');
+        return;
+    }
+
+    try {
+        const result = await addComment({
+            proposalId,
+            handleName,
+            anonymous,
+            type: typeInput ? typeInput.value : '応援',
+            content,
+            userId: userEmail
+        });
+
+        if (!anonymous && handleName) {
+            localStorage.setItem(STORAGE_KEYS.HANDLE_NAME, handleName);
+        }
+
+        const comment = result.comment || {
+            proposalId,
+            handleName: anonymous || !handleName ? '匿名' : handleName,
+            type: typeInput ? typeInput.value : '応援',
+            content,
+            postedDate: new Date().toISOString()
+        };
+        if (!commentsByProposal[proposalId]) {
+            commentsByProposal[proposalId] = [];
+        }
+        commentsByProposal[proposalId].unshift(comment);
+
+        const proposal = allProposals.find(p => p.id === proposalId)
+            || allPastProposals.find(p => p.id === proposalId);
+        if (proposal) {
+            proposal.commentCount = getCommentCount(proposalId);
+        }
+
+        document.getElementById('commentContent').value = '';
+        document.getElementById('commentList').innerHTML = renderCommentItems(proposalId);
+        applyFilters();
+        showSuccess('コメントを投稿しました');
+    } catch (error) {
+        console.error('コメント投稿エラー:', error);
+        const isUnknownAction = (error.message || '').includes('Unknown action');
+        showError(isUnknownAction
+            ? 'コメント機能を有効にするには、Google Apps Scriptの最新コードを再デプロイしてください。'
+            : (error.message || 'コメントの投稿に失敗しました'));
+    }
 }
 
 /**
@@ -478,6 +656,10 @@ function escapeHtml(text) {
 // Escapeキーでモーダルを閉じる
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        closeModal();
+        if (document.getElementById('commentModal').style.display === 'flex') {
+            closeCommentModal();
+        } else {
+            closeModal();
+        }
     }
 });

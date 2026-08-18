@@ -11,7 +11,8 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxh9sg8ZOpVhxBl
 const STORAGE_KEYS = {
     USER_EMAIL: 'ssap_user_email',
     USER_NAME: 'ssap_user_name',
-    LIKED_PROPOSALS: 'ssap_liked_proposals' // ローカルにいいね済み提案を保存
+    LIKED_PROPOSALS: 'ssap_liked_proposals',
+    HANDLE_NAME: 'ssap_handle_name'
 };
 
 // その他の設定

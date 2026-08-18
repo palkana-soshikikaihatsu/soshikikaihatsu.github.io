@@ -65,13 +65,14 @@ async function sendRequest(action, data = {}) {
 /**
  * GASバックエンドにGETリクエストを送信
  */
-async function getRequest(action) {
+async function getRequest(action, extraParams = {}) {
     if (GAS_WEB_APP_URL === 'YOUR_GAS_DEPLOYMENT_URL_HERE') {
         throw new Error('❌ GAS_WEB_APP_URLが設定されていません。\n\njs/config.jsファイルを開いて、GASのデプロイURLを設定してください。');
     }
 
     try {
-        const url = `${GAS_WEB_APP_URL}?action=${action}`;
+        const params = new URLSearchParams({ action, ...extraParams });
+        const url = `${GAS_WEB_APP_URL}?${params.toString()}`;
         console.log('📤 GETリクエスト:', url);
         
         const response = await fetch(url, {
@@ -148,6 +149,14 @@ async function getAllProposals(authToken) {
 /**
  * いいねを追加
  */
+async function getComments(proposalId) {
+    return await getRequest('getComments', proposalId ? { proposalId } : {});
+}
+
+async function addComment(commentData) {
+    return await sendRequest('addComment', commentData);
+}
+
 async function addLike(proposalId, userId) {
     return await sendRequest('addLike', {
         proposalId: proposalId,
