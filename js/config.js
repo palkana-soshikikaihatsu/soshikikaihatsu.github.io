@@ -5,7 +5,7 @@
  */
 
 // Google Apps ScriptのWebアプリURL（デプロイ後に設定）
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxHcIX5ljuqEyvLP50RMWy0qzprIdTZ4axDiE9-mX0vfeAKJJTxpa813BWRuJkbfLUcEA/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzQD3ScEXA5_lvW_HxEEQxHqWn4HDHO8k1jtraxFSJB32Mu-I2Bjaqa_EVI5TOEdqj4fA/exec';
 
 // ローカルストレージキー
 const STORAGE_KEYS = {
